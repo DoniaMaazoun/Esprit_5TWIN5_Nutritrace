@@ -113,13 +113,6 @@
                 >
                     Connexion
                 </button>
-
-                <!-- Forgot Password Link -->
-                <div class="text-center">
-                    <a href="{{ route('password.request') }}" class="text-sm text-green-600 hover:text-green-700 font-medium">
-                        Mot de passe oublié ?
-                    </a>
-                </div>
             </form>
         </div>
 

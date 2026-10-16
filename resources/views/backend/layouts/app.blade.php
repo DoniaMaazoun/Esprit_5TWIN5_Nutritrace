@@ -19,60 +19,57 @@
   <!-- Layout CSS -->
   <link rel="stylesheet" href="{{ asset('backend/css/demo_1/style.css') }}">
 
-  <!-- Farm to Fork Custom CSS -->
-  <link rel="stylesheet" href="{{ asset('backend/css/farm-to-fork-custom.css') }}">
-
   <!-- Favicon -->
   <link rel="shortcut icon" href="{{ asset('backend/images/favicon.ico') }}" />
 
-  <!-- Farm to Fork Custom Sidebar Styling -->
+  <!-- Farm to Fork Custom Styling - INLINE -->
   <style>
-    /* ==================== FARM TO FORK - NAVBAR GREEN OVERRIDE ==================== */
-    .container-scroller .navbar.default-layout {
+    /* NAVBAR GREEN COLORS */
+    .navbar.default-layout {
       background: linear-gradient(to right, #1e3a2b, #2d5a27) !important;
     }
     
-    .container-scroller .navbar.default-layout .navbar-brand-wrapper {
+    .navbar.default-layout .navbar-brand-wrapper {
       background: linear-gradient(to bottom, #1e3a2b, #2d5a27) !important;
     }
 
-    .container-scroller .navbar.default-layout .navbar-menu-wrapper {
+    .navbar.default-layout .navbar-menu-wrapper {
       background: linear-gradient(to right, #1e3a2b, #2d5a27) !important;
     }
 
-    /* ==================== FARM TO FORK SIDEBAR - CUSTOM COLORS ==================== */
-    
-    /* Main Sidebar Background - Vert Forêt Profond */
-    .container-scroller .sidebar {
+    .navbar.default-layout .navbar-menu-wrapper .navbar-nav .nav-item .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    .navbar.default-layout .navbar-menu-wrapper .navbar-nav .nav-item .nav-link:hover {
+      color: #28a745 !important;
+    }
+
+    /* SIDEBAR GREEN COLORS */
+    .sidebar {
       background: linear-gradient(to top, #1e3a2b, #2d5a27) !important;
     }
 
-    /* Sidebar Links */
-    .container-scroller .sidebar > .nav .nav-item .nav-link {
-      color: rgba(255, 255, 255, 0.85);
-      transition: all 0.3s ease;
+    .sidebar > .nav .nav-item .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
     }
 
-    /* Sidebar Links Hover */
-    .container-scroller .sidebar > .nav .nav-item .nav-link:hover {
-      color: #fff;
+    .sidebar > .nav .nav-item .nav-link:hover {
+      color: #fff !important;
       background: rgba(40, 167, 69, 0.15) !important;
     }
 
-    /* Sidebar Active Link - Vert Éclatant */
-    .container-scroller .sidebar > .nav .nav-item.active > .nav-link {
+    .sidebar > .nav .nav-item.active > .nav-link {
       color: #28a745 !important;
       background: rgba(40, 167, 69, 0.2) !important;
-      border-left: 4px solid #28a745;
-      padding-left: 51px;
+      border-left: 4px solid #28a745 !important;
+      padding-left: 51px !important;
     }
 
-    .container-scroller .sidebar > .nav .nav-item.active > .nav-link .menu-title,
-    .container-scroller .sidebar > .nav .nav-item.active > .nav-link i {
+    .sidebar > .nav .nav-item.active > .nav-link .menu-title,
+    .sidebar > .nav .nav-item.active > .nav-link i {
       color: #28a745 !important;
     }
-
-    /* ==================== FIN CUSTOM COLORS ==================== */
   </style>
 
   @yield('extra-css')
