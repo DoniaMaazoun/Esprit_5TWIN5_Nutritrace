@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="hero-visual">
-      <div class="hero-image-placeholder" style="background: url('{{ asset('frontend/images/placeholder.jpg') }}') center/cover no-repeat;">
+      <div class="hero-image-placeholder rounded-4" style="background: url('{{ asset('frontend/images/hero-product.jpg') }}') center/cover no-repeat; overflow: hidden;">
         <i class="fa-solid fa-leaf" style="display:none;"></i>
         <span style="display:none;">Farm to Fork</span>
       </div>
