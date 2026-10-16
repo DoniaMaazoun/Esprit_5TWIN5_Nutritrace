@@ -17,6 +17,16 @@
       </div>
     </form>
     <ul class="navbar-nav ml-auto">
+      <!-- Logout Button -->
+      <li class="nav-item">
+        <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+          @csrf
+          <button type="submit" class="btn btn-sm btn-danger" style="margin-right: 1rem; margin-top: 0.5rem;">
+            <i class="mdi mdi-power"></i> Déconnexion
+          </button>
+        </form>
+      </li>
+
       <li class="nav-item dropdown">
         <a class="nav-link count-indicator" id="notificationDropdown" href="#" data-toggle="dropdown">
           <i class="mdi mdi-bell-outline"></i>
@@ -48,9 +58,14 @@
             <p class="mb-1 mt-3 font-weight-semibold">Admin Farm to Fork</p>
             <p class="font-weight-light text-muted mb-0">admin@farmtofork.tn</p>
           </div>
-          <a class="dropdown-item">Mon Profil <i class="dropdown-item-icon ti-dashboard"></i></a>
-          <a class="dropdown-item">Paramètres <i class="dropdown-item-icon ti-settings"></i></a>
-          <a class="dropdown-item">Déconnexion <i class="dropdown-item-icon ti-power-off"></i></a>
+          <a class="dropdown-item" href="#">Mon Profil <i class="dropdown-item-icon ti-dashboard"></i></a>
+          <a class="dropdown-item" href="#">Paramètres <i class="dropdown-item-icon ti-settings"></i></a>
+          <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+            @csrf
+            <button type="submit" class="dropdown-item" style="border: none; background: none; cursor: pointer; text-align: left; width: 100%; padding: 0.75rem 1rem;">
+              Déconnexion <i class="dropdown-item-icon ti-power-off"></i>
+            </button>
+          </form>
         </div>
       </li>
     </ul>
