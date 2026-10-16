@@ -23,6 +23,20 @@
       </a>
     </li>
 
+    <!-- User Approvals -->
+    <li class="nav-item">
+      <a class="nav-link @if(Route::currentRouteName() === 'backend.users.approvals') active @endif" href="{{ route('backend.users.approvals') }}">
+        <i class="menu-icon typcn typcn-user-add"></i>
+        <span class="menu-title">Approbations Comptes Pro</span>
+        @php
+          $pendingCount = \App\Models\User::where('role', 'pro')->where('status', 'pending')->count();
+        @endphp
+        @if($pendingCount > 0)
+          <span class="badge badge-danger float-right">{{ $pendingCount }}</span>
+        @endif
+      </a>
+    </li>
+
     <!-- Produits & Catégories -->
     <li class="nav-item">
       <a class="nav-link" data-toggle="collapse" href="#products-menu" aria-expanded="false" aria-controls="products-menu">

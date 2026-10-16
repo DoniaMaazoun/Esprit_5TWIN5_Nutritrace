@@ -22,6 +22,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'pro_type',
+        'company_name',
+        'tax_id',
+        'status',
     ];
 
     /**
@@ -45,5 +50,70 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Helper Methods for User Roles
+     */
+
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user is a professional
+     */
+    public function isPro(): bool
+    {
+        return $this->role === 'pro';
+    }
+
+    /**
+     * Check if user is a consumer
+     */
+    public function isConsumer(): bool
+    {
+        return $this->role === 'consumer';
+    }
+
+    /**
+     * Check if professional account is approved
+     */
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    /**
+     * Check if professional account is pending
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    /**
+     * Check if account is active
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Get professional type label in French
+     */
+    public function getProTypeLabel(): string
+    {
+        return match($this->pro_type) {
+            'producer' => 'Producteur / Agriculteur',
+            'processor' => 'Transformateur / Usine',
+            'distributor' => 'Distributeur / Logistique',
+            default => 'Non défini',
+        };
     }
 }

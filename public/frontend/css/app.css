@@ -1902,3 +1902,113 @@ p + p {
     font-size: 2rem;
   }
 }
+
+
+/* ============================================
+   AUTHENTICATION STYLES
+   ============================================ */
+
+/* Logout button */
+.btn--logout {
+  background-color: var(--secondary);
+  color: var(--white);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.btn--logout:hover {
+  background-color: var(--secondary-light);
+  color: var(--white);
+}
+
+/* Accent button (Scanner) */
+.btn--accent {
+  background-color: var(--accent);
+  color: var(--white);
+}
+
+.btn--accent:hover {
+  background-color: var(--accent-light);
+  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(244, 162, 97, 0.3);
+}
+
+/* Nav auth menu */
+.nav-auth-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--gray-light);
+}
+
+.nav-user-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--dark);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Mobile responsive auth */
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 72px;
+    left: 0;
+    right: 0;
+    background: rgba(250, 253, 247, 0.98);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(45, 106, 79, 0.08);
+    padding: 16px 0;
+    z-index: 999;
+  }
+
+  .nav.nav-open {
+    display: flex;
+  }
+
+  .nav a {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 0;
+  }
+
+  .nav .btn {
+    margin: 4px 20px;
+    width: calc(100% - 40px);
+    justify-content: center;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-auth-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    padding: 12px 20px;
+    width: calc(100% - 40px);
+  }
+
+  .nav-user-name {
+    text-align: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-light);
+  }
+
+  .btn--logout {
+    width: 100%;
+    justify-content: center;
+  }
+}
