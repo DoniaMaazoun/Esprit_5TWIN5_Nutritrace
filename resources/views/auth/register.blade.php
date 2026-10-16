@@ -4,388 +4,731 @@
 
 @section('extra-css')
 <style>
-    .account-type-card {
-        cursor: pointer;
-        transition: all 0.3s ease;
+  /* Authentification Page Styles */
+  .auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 200px);
+    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f3 100%);
+    padding: 40px 20px;
+  }
+
+  .auth-card {
+    border: none;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 40px rgba(30, 58, 43, 0.15);
+    max-width: 600px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .auth-card-header {
+    background: linear-gradient(135deg, #1e3a2b 0%, #2d5a27 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  .auth-card-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .auth-card-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+  }
+
+  .auth-card-body {
+    padding: 2.5rem;
+  }
+
+  /* Form Groups */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    color: #1e3a2b;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-group label i {
+    color: #28a745;
+    font-size: 1.1rem;
+  }
+
+  .form-group label .required {
+    color: #dc3545;
+    font-weight: 700;
+  }
+
+  .form-control,
+  .form-select {
+    border: 2px solid #e0e0e0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+    background-color: #f8fff9;
+  }
+
+  .form-control::placeholder {
+    color: #a0a0a0;
+  }
+
+  /* Error Messages */
+  .alert {
+    border: none;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
     }
-    
-    .account-type-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    
-    .account-type-card.active {
-        border-color: #28a745;
-        background-color: rgba(40, 167, 69, 0.05);
+  }
+
+  .alert-danger {
+    background-color: #ffe8e8;
+    color: #721c24;
+    border: 1px solid #fcc;
+  }
+
+  .alert-danger i {
+    color: #dc3545;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  /* Account Type Selection - Radio Cards */
+  .account-type-group {
+    margin: 2rem 0;
+  }
+
+  .account-type-label {
+    font-weight: 700;
+    color: #1e3a2b;
+    margin-bottom: 1.5rem;
+    display: block;
+  }
+
+  .account-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .account-type-card {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .account-type-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .account-type-card-inner {
+    border: 2px solid #e0e0e0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: white;
+    cursor: pointer;
+  }
+
+  .account-type-card:hover .account-type-card-inner {
+    border-color: #28a745;
+    background-color: #f8fff9;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+  }
+
+  .account-type-card input[type="radio"]:checked + .account-type-card-inner {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #f0fdf4 0%, #f0fff4 100%);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);
+  }
+
+  .account-type-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .account-type-name {
+    font-weight: 700;
+    color: #1e3a2b;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .account-type-desc {
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  /* Professional Section */
+  .pro-section {
+    display: none;
+    background: linear-gradient(135deg, #f0fdf4 0%, #f9fff7 100%);
+    border: 2px solid #28a745;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .pro-section.show {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
     }
-    
-    .pro-fields {
-        display: none;
-        animation: slideDown 0.3s ease;
+    to {
+      opacity: 1;
     }
-    
-    .pro-fields.show {
-        display: block;
+  }
+
+  .pro-section-title {
+    font-weight: 700;
+    color: #1e3a2b;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+  }
+
+  .pro-section-title i {
+    color: #28a745;
+    font-size: 1.3rem;
+  }
+
+  /* Info Box */
+  .info-box {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .info-box i {
+    color: #2196f3;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .info-box p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #1565c0;
+    line-height: 1.5;
+  }
+
+  /* Terms Checkbox */
+  .form-check {
+    margin: 1.5rem 0;
+  }
+
+  .form-check-input {
+    border: 2px solid #e0e0e0;
+    border-radius: 0.35rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+  }
+
+  .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  }
+
+  .form-check-label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    color: #555;
+    font-size: 0.95rem;
+  }
+
+  .form-check-label a {
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .form-check-label a:hover {
+    text-decoration: underline;
+  }
+
+  /* Submit Button */
+  .btn-register {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+    color: white;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    border-radius: 2rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .btn-register:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #145a28 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+  }
+
+  .btn-register:active {
+    transform: translateY(0);
+  }
+
+  /* Auth Footer Links */
+  .auth-footer {
+    padding: 1.5rem 2.5rem;
+    background-color: #f8f9fa;
+    text-align: center;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .auth-footer p {
+    margin: 0;
+    color: #555;
+    font-size: 0.95rem;
+  }
+
+  .auth-footer a {
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .auth-footer a:hover {
+    color: #1e7e34;
+    text-decoration: underline;
+  }
+
+  /* Logo/Icon */
+  .auth-logo {
+    font-size: 2.5rem;
+    color: white;
+  }
+
+  /* Responsive */
+  @media (max-width: 576px) {
+    .auth-container {
+      min-height: auto;
+      padding: 20px;
     }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+
+    .auth-card {
+      max-width: 100%;
     }
+
+    .auth-card-header {
+      padding: 1.5rem;
+    }
+
+    .auth-card-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .auth-card-body {
+      padding: 1.5rem;
+    }
+
+    .auth-footer {
+      padding: 1rem 1.5rem;
+    }
+
+    .account-types {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 @endsection
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-2xl w-full space-y-8">
-        <!-- Logo / Header -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Farm to Fork</h1>
-            <p class="text-gray-600">De la ferme à l'assiette en toute transparence</p>
-        </div>
-
-        <!-- Registration Form -->
-        <div class="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-            <h2 class="text-center text-2xl font-extrabold text-gray-900 mb-8">Créer votre compte</h2>
-
-            <!-- Error Messages -->
-            @if ($errors->any())
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Erreur d'inscription</h3>
-                            <div class="mt-2 text-sm text-red-700">
-                                <ul class="list-disc pl-5 space-y-1">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <form class="space-y-6" method="POST" action="{{ route('register') }}" id="registerForm">
-                @csrf
-
-                <!-- Account Type Selection -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-4">
-                        Type de compte
-                    </label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Consumer Account -->
-                        <div
-                            class="account-type-card border-2 border-gray-200 rounded-lg p-4 active"
-                            data-role="consumer"
-                        >
-                            <div class="flex items-center">
-                                <input
-                                    type="radio"
-                                    name="account_type"
-                                    value="consumer"
-                                    id="consumer"
-                                    checked
-                                    class="h-4 w-4 text-green-600"
-                                />
-                                <label for="consumer" class="ml-3 flex flex-col cursor-pointer">
-                                    <span class="block text-sm font-medium text-gray-900">Consommateur</span>
-                                    <span class="block text-xs text-gray-500">Grand public</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Professional Account -->
-                        <div
-                            class="account-type-card border-2 border-gray-200 rounded-lg p-4"
-                            data-role="pro"
-                        >
-                            <div class="flex items-center">
-                                <input
-                                    type="radio"
-                                    name="account_type"
-                                    value="pro"
-                                    id="pro"
-                                    class="h-4 w-4 text-green-600"
-                                />
-                                <label for="pro" class="ml-3 flex flex-col cursor-pointer">
-                                    <span class="block text-sm font-medium text-gray-900">Professionnel</span>
-                                    <span class="block text-xs text-gray-500">Producteur, Transformateur, Distributeur</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Name -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">
-                        Nom complet
-                    </label>
-                    <input
-                        id="name"
-                        type="text"
-                        name="name"
-                        value="{{ old('name') }}"
-                        required
-                        autofocus
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('name') border-red-500 @enderror"
-                        placeholder="Jean Dupont"
-                    />
-                    @error('name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">
-                        Adresse e-mail
-                    </label>
-                    <input
-                        id="email"
-                        type="email"
-                        name="email"
-                        value="{{ old('email') }}"
-                        required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('email') border-red-500 @enderror"
-                        placeholder="you@example.com"
-                    />
-                    @error('email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Password -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">
-                        Mot de passe
-                    </label>
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('password') border-red-500 @enderror"
-                        placeholder="••••••••"
-                    />
-                    <p class="mt-1 text-xs text-gray-500">Minimum 8 caractères</p>
-                    @error('password')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Confirm Password -->
-                <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">
-                        Confirmer le mot de passe
-                    </label>
-                    <input
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                        placeholder="••••••••"
-                    />
-                    @error('password_confirmation')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Professional Fields (Hidden by default) -->
-                <div class="pro-fields" id="proFields">
-                    <div class="border-t pt-6 mt-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Informations professionnelles</h3>
-
-                        <!-- Professional Type -->
-                        <div class="mb-4">
-                            <label for="pro_type" class="block text-sm font-medium text-gray-700">
-                                Type d'activité <span class="text-red-500">*</span>
-                            </label>
-                            <select
-                                id="pro_type"
-                                name="pro_type"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('pro_type') border-red-500 @enderror"
-                            >
-                                <option value="">-- Sélectionner votre activité --</option>
-                                <option value="producer" @selected(old('pro_type') === 'producer')>Producteur / Agriculteur</option>
-                                <option value="processor" @selected(old('pro_type') === 'processor')>Transformateur / Usine</option>
-                                <option value="distributor" @selected(old('pro_type') === 'distributor')>Distributeur / Logistique</option>
-                            </select>
-                            @error('pro_type')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Company Name -->
-                        <div class="mb-4">
-                            <label for="company_name" class="block text-sm font-medium text-gray-700">
-                                Nom de l'établissement / Ferme <span class="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="company_name"
-                                type="text"
-                                name="company_name"
-                                value="{{ old('company_name') }}"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('company_name') border-red-500 @enderror"
-                                placeholder="Ferme du Soleil"
-                            />
-                            @error('company_name')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Tax ID -->
-                        <div>
-                            <label for="tax_id" class="block text-sm font-medium text-gray-700">
-                                Identifiant fiscal / Matricule <span class="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="tax_id"
-                                type="text"
-                                name="tax_id"
-                                value="{{ old('tax_id') }}"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('tax_id') border-red-500 @enderror"
-                                placeholder="Ex: 12345678"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">Votre numéro de matricule fiscal ou registre de commerce</p>
-                            @error('tax_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Info Message -->
-                        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-                            <div class="flex">
-                                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                                <div class="ml-3">
-                                    <p class="text-sm text-blue-700">
-                                        <strong>Important :</strong> Votre compte professionnel sera soumis à une vérification par notre équipe administrative. Vous recevrez une confirmation par e-mail une fois approuvé.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Terms & Conditions -->
-                <div class="flex items-center">
-                    <input
-                        id="terms"
-                        type="checkbox"
-                        name="terms"
-                        class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded @error('terms') border-red-500 @enderror"
-                    />
-                    <label for="terms" class="ml-2 block text-sm text-gray-700">
-                        J'accepte les
-                        <a href="#" class="text-green-600 hover:text-green-700 font-medium">conditions d'utilisation</a>
-                        et la
-                        <a href="#" class="text-green-600 hover:text-green-700 font-medium">politique de confidentialité</a>
-                    </label>
-                </div>
-                @error('terms')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-
-                <!-- Submit Button -->
-                <button
-                    type="submit"
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-700 to-green-600 hover:from-green-800 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200"
-                >
-                    S'inscrire
-                </button>
-            </form>
-        </div>
-
-        <!-- Login Link -->
-        <div class="text-center">
-            <p class="text-sm text-gray-600">
-                Vous avez déjà un compte ?
-                <a href="{{ route('login') }}" class="font-medium text-green-600 hover:text-green-700">
-                    Se connecter
-                </a>
-            </p>
-        </div>
+<div class="auth-container">
+  <div class="card auth-card">
+    <!-- Card Header -->
+    <div class="auth-card-header">
+      <h1>
+        <i class="bi bi-leaf auth-logo"></i>
+        S'inscrire
+      </h1>
+      <p>Créez votre compte Farm to Fork</p>
     </div>
-</div>
 
+    <!-- Card Body -->
+    <div class="auth-card-body">
+      <!-- Error Messages -->
+      @if ($errors->any())
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-circle"></i>
+          <div>
+            <strong>Erreur d'inscription</strong>
+            <ul class="alert-list mt-2">
+              @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+          </div>
+        </div>
+      @endif
+
+      <!-- Registration Form -->
+      <form method="POST" action="{{ route('register') }}" id="registerForm" novalidate>
+        @csrf
+
+        <!-- Account Type Selection -->
+        <div class="account-type-group">
+          <label class="account-type-label">
+            <i class="bi bi-question-circle"></i>
+            Type de compte
+          </label>
+          <div class="account-types">
+            <!-- Consumer Option -->
+            <label class="account-type-card">
+              <input
+                type="radio"
+                name="account_type"
+                value="consumer"
+                checked
+                class="account-type-input"
+              />
+              <div class="account-type-card-inner">
+                <span class="account-type-icon">🥗</span>
+                <div class="account-type-name">Consommateur</div>
+                <div class="account-type-desc">Grand public</div>
+              </div>
+            </label>
+
+            <!-- Professional Option -->
+            <label class="account-type-card">
+              <input
+                type="radio"
+                name="account_type"
+                value="pro"
+                class="account-type-input"
+              />
+              <div class="account-type-card-inner">
+                <span class="account-type-icon">🚜</span>
+                <div class="account-type-name">Professionnel</div>
+                <div class="account-type-desc">Producteur, Transformateur, Distributeur</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Name Input -->
+        <div class="form-group">
+          <label for="name">
+            <i class="bi bi-person"></i>
+            Nom complet
+          </label>
+          <input
+            type="text"
+            class="form-control @error('name') is-invalid @enderror"
+            id="name"
+            name="name"
+            value="{{ old('name') }}"
+            placeholder="Jean Dupont"
+            required
+            autofocus
+          />
+          @error('name')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Email Input -->
+        <div class="form-group">
+          <label for="email">
+            <i class="bi bi-envelope"></i>
+            Adresse E-mail
+          </label>
+          <input
+            type="email"
+            class="form-control @error('email') is-invalid @enderror"
+            id="email"
+            name="email"
+            value="{{ old('email') }}"
+            placeholder="votre@email.com"
+            required
+          />
+          @error('email')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Password Input -->
+        <div class="form-group">
+          <label for="password">
+            <i class="bi bi-lock"></i>
+            Mot de passe
+          </label>
+          <input
+            type="password"
+            class="form-control @error('password') is-invalid @enderror"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            required
+          />
+          <small class="d-block text-muted mt-1">
+            <i class="bi bi-info-circle"></i> Minimum 8 caractères
+          </small>
+          @error('password')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Password Confirmation Input -->
+        <div class="form-group">
+          <label for="password_confirmation">
+            <i class="bi bi-lock-check"></i>
+            Confirmer le mot de passe
+          </label>
+          <input
+            type="password"
+            class="form-control @error('password_confirmation') is-invalid @enderror"
+            id="password_confirmation"
+            name="password_confirmation"
+            placeholder="••••••••"
+            required
+          />
+          @error('password_confirmation')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Professional Section (Hidden by default) -->
+        <div class="pro-section" id="proSection">
+          <div class="pro-section-title">
+            <i class="bi bi-building"></i>
+            Informations Professionnelles
+          </div>
+
+          <!-- Professional Type -->
+          <div class="form-group">
+            <label for="pro_type">
+              <i class="bi bi-briefcase"></i>
+              Type d'activité
+              <span class="required">*</span>
+            </label>
+            <select
+              class="form-select @error('pro_type') is-invalid @enderror"
+              id="pro_type"
+              name="pro_type"
+            >
+              <option value="">-- Sélectionner votre activité --</option>
+              <option value="producer" @selected(old('pro_type') === 'producer')>
+                🌾 Producteur / Agriculteur
+              </option>
+              <option value="processor" @selected(old('pro_type') === 'processor')>
+                🏭 Transformateur / Usine
+              </option>
+              <option value="distributor" @selected(old('pro_type') === 'distributor')>
+                📦 Distributeur / Logistique
+              </option>
+            </select>
+            @error('pro_type')
+              <small class="d-block text-danger mt-2">
+                <i class="bi bi-exclamation-circle"></i> {{ $message }}
+              </small>
+            @enderror
+          </div>
+
+          <!-- Company Name -->
+          <div class="form-group">
+            <label for="company_name">
+              <i class="bi bi-building"></i>
+              Nom de l'établissement / Ferme
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control @error('company_name') is-invalid @enderror"
+              id="company_name"
+              name="company_name"
+              value="{{ old('company_name') }}"
+              placeholder="Ferme du Soleil"
+            />
+            @error('company_name')
+              <small class="d-block text-danger mt-2">
+                <i class="bi bi-exclamation-circle"></i> {{ $message }}
+              </small>
+            @enderror
+          </div>
+
+          <!-- Tax ID -->
+          <div class="form-group">
+            <label for="tax_id">
+              <i class="bi bi-receipt"></i>
+              Identifiant fiscal / Matricule
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control @error('tax_id') is-invalid @enderror"
+              id="tax_id"
+              name="tax_id"
+              value="{{ old('tax_id') }}"
+              placeholder="Ex: 12345678901"
+            />
+            <small class="d-block text-muted mt-1">
+              <i class="bi bi-info-circle"></i> Votre numéro de matricule fiscal
+            </small>
+            @error('tax_id')
+              <small class="d-block text-danger mt-2">
+                <i class="bi bi-exclamation-circle"></i> {{ $message }}
+              </small>
+            @enderror
+          </div>
+
+          <!-- Info Message -->
+          <div class="info-box">
+            <i class="bi bi-info-circle"></i>
+            <p>
+              <strong>Important :</strong> Votre compte professionnel sera soumis à une vérification par notre équipe administrative. Vous recevrez une confirmation par e-mail une fois approuvé.
+            </p>
+          </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="form-check">
+          <input
+            type="checkbox"
+            class="form-check-input @error('terms') is-invalid @enderror"
+            id="terms"
+            name="terms"
+          />
+          <label class="form-check-label" for="terms">
+            J'accepte les
+            <a href="#">conditions d'utilisation</a>
+            et la
+            <a href="#">politique de confidentialité</a>
+          </label>
+          @error('terms')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-register">
+          <i class="bi bi-check-circle"></i>
+          S'inscrire
+        </button>
+      </form>
+    </div>
+
+    <!-- Card Footer -->
+    <div class="auth-footer">
+      <p>
+        Vous avez déjà un compte ?
+        <a href="{{ route('login') }}">
+          <i class="bi bi-arrow-right"></i>
+          Se connecter
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
 @endsection
 
 @section('extra-js')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const accountTypeCards = document.querySelectorAll('.account-type-card');
-    const accountTypeRadios = document.querySelectorAll('input[name="account_type"]');
-    const proFields = document.getElementById('proFields');
+  document.addEventListener('DOMContentLoaded', function() {
+    const accountTypeInputs = document.querySelectorAll('.account-type-input');
+    const proSection = document.getElementById('proSection');
     const proTypeSelect = document.getElementById('pro_type');
     const companyNameInput = document.getElementById('company_name');
     const taxIdInput = document.getElementById('tax_id');
 
-    // Handle account type selection
-    accountTypeCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const role = this.dataset.role;
-            const radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
-
-            // Update card styling
-            accountTypeCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-
-            // Show/hide professional fields
-            toggleProFields(role);
-        });
-    });
-
-    // Handle radio button change
-    accountTypeRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            accountTypeCards.forEach(card => card.classList.remove('active'));
-            if (this.value === 'consumer') {
-                accountTypeCards[0].classList.add('active');
-            } else {
-                accountTypeCards[1].classList.add('active');
-            }
-            toggleProFields(this.value);
-        });
-    });
-
-    function toggleProFields(role) {
-        if (role === 'pro') {
-            proFields.classList.add('show');
-            proTypeSelect.required = true;
-            companyNameInput.required = true;
-            taxIdInput.required = true;
-        } else {
-            proFields.classList.remove('show');
-            proTypeSelect.required = false;
-            companyNameInput.required = false;
-            taxIdInput.required = false;
-        }
+    function toggleProSection() {
+      const selectedType = document.querySelector('.account-type-input:checked').value;
+      
+      if (selectedType === 'pro') {
+        proSection.classList.add('show');
+        proTypeSelect.required = true;
+        companyNameInput.required = true;
+        taxIdInput.required = true;
+      } else {
+        proSection.classList.remove('show');
+        proTypeSelect.required = false;
+        companyNameInput.required = false;
+        taxIdInput.required = false;
+      }
     }
 
-    // Initial state based on old input
-    const selectedRole = document.querySelector('input[name="account_type"]:checked')?.value;
-    if (selectedRole === 'pro') {
-        toggleProFields('pro');
-        accountTypeCards[1].classList.add('active');
-        accountTypeCards[0].classList.remove('active');
-    }
-});
+    accountTypeInputs.forEach(input => {
+      input.addEventListener('change', toggleProSection);
+    });
+
+    // Initialize on page load
+    toggleProSection();
+  });
 </script>
 @endsection

@@ -2,129 +2,366 @@
 
 @section('title', 'Connexion - Farm to Fork')
 
+@section('extra-css')
+<style>
+  /* Authentification Page Styles */
+  .auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 200px);
+    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f3 100%);
+    padding: 40px 20px;
+  }
+
+  .auth-card {
+    border: none;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 40px rgba(30, 58, 43, 0.15);
+    max-width: 500px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .auth-card-header {
+    background: linear-gradient(135deg, #1e3a2b 0%, #2d5a27 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  .auth-card-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .auth-card-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+  }
+
+  .auth-card-body {
+    padding: 2.5rem;
+  }
+
+  /* Form Groups */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    color: #1e3a2b;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-group label i {
+    color: #28a745;
+    font-size: 1.1rem;
+  }
+
+  .form-control {
+    border: 2px solid #e0e0e0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+    background-color: #f8fff9;
+  }
+
+  .form-control::placeholder {
+    color: #a0a0a0;
+  }
+
+  /* Checkbox Remember Me */
+  .form-check {
+    margin: 1.5rem 0;
+  }
+
+  .form-check-input {
+    border: 2px solid #e0e0e0;
+    border-radius: 0.35rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+  }
+
+  .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  }
+
+  .form-check-label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    color: #555;
+    font-size: 0.95rem;
+  }
+
+  /* Error Messages */
+  .alert {
+    border: none;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .alert-danger {
+    background-color: #ffe8e8;
+    color: #721c24;
+    border: 1px solid #fcc;
+  }
+
+  .alert-danger i {
+    color: #dc3545;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .alert-list {
+    margin: 0;
+    padding: 0;
+  }
+
+  .alert-list li {
+    list-style: none;
+    margin: 0.25rem 0;
+  }
+
+  /* Submit Button */
+  .btn-login {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+    color: white;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    border-radius: 2rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .btn-login:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #145a28 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+  }
+
+  .btn-login:active {
+    transform: translateY(0);
+  }
+
+  /* Auth Footer Links */
+  .auth-footer {
+    padding: 1.5rem 2.5rem;
+    background-color: #f8f9fa;
+    text-align: center;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .auth-footer p {
+    margin: 0;
+    color: #555;
+    font-size: 0.95rem;
+  }
+
+  .auth-footer a {
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .auth-footer a:hover {
+    color: #1e7e34;
+    text-decoration: underline;
+  }
+
+  /* Logo/Icon */
+  .auth-logo {
+    font-size: 2.5rem;
+    color: white;
+  }
+
+  /* Responsive */
+  @media (max-width: 576px) {
+    .auth-container {
+      min-height: auto;
+      padding: 20px;
+    }
+
+    .auth-card {
+      max-width: 100%;
+    }
+
+    .auth-card-header {
+      padding: 1.5rem;
+    }
+
+    .auth-card-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .auth-card-body {
+      padding: 1.5rem;
+    }
+
+    .auth-footer {
+      padding: 1rem 1.5rem;
+    }
+  }
+</style>
+@endsection
+
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <!-- Logo / Header -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Farm to Fork</h1>
-            <p class="text-gray-600">De la ferme à l'assiette en toute transparence</p>
-        </div>
-
-        <!-- Login Form -->
-        <div class="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-            <h2 class="text-center text-2xl font-extrabold text-gray-900 mb-6">Connexion</h2>
-
-            <!-- Error Messages -->
-            @if ($errors->any())
-                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">
-                                @if ($errors->has('email') && $errors->first('email') === 'Ces identifiants ne correspondent pas à nos enregistrements.')
-                                    Identifiants invalides
-                                @elseif ($errors->has('pending_account'))
-                                    {{ $errors->first('pending_account') }}
-                                @else
-                                    Erreur de connexion
-                                @endif
-                            </h3>
-                            @if ($errors->has('pending_account'))
-                                <div class="mt-2 text-sm text-red-700">
-                                    {{ $errors->first('pending_account') }}
-                                </div>
-                            @else
-                                <div class="mt-2 text-sm text-red-700">
-                                    <ul class="list-disc pl-5 space-y-1">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <form class="space-y-6" method="POST" action="{{ route('login') }}">
-                @csrf
-
-                <!-- Email -->
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">
-                        Adresse e-mail
-                    </label>
-                    <input
-                        id="email"
-                        type="email"
-                        name="email"
-                        value="{{ old('email') }}"
-                        required
-                        autofocus
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('email') border-red-500 @enderror"
-                        placeholder="you@example.com"
-                    />
-                    @error('email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Password -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">
-                        Mot de passe
-                    </label>
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 @error('password') border-red-500 @enderror"
-                        placeholder="••••••••"
-                    />
-                    @error('password')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Remember Me -->
-                <div class="flex items-center">
-                    <input
-                        id="remember_me"
-                        type="checkbox"
-                        name="remember"
-                        class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                    />
-                    <label for="remember_me" class="ml-2 block text-sm text-gray-700">
-                        Se souvenir de moi
-                    </label>
-                </div>
-
-                <!-- Submit Button -->
-                <button
-                    type="submit"
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-700 to-green-600 hover:from-green-800 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200"
-                >
-                    Connexion
-                </button>
-            </form>
-        </div>
-
-        <!-- Sign Up Link -->
-        <div class="text-center">
-            <p class="text-sm text-gray-600">
-                Vous n'avez pas de compte ?
-                <a href="{{ route('register') }}" class="font-medium text-green-600 hover:text-green-700">
-                    S'inscrire
-                </a>
-            </p>
-        </div>
+<div class="auth-container">
+  <div class="card auth-card">
+    <!-- Card Header -->
+    <div class="auth-card-header">
+      <h1>
+        <i class="bi bi-leaf auth-logo"></i>
+        Connexion
+      </h1>
+      <p>Accédez à votre compte Farm to Fork</p>
     </div>
+
+    <!-- Card Body -->
+    <div class="auth-card-body">
+      <!-- Error Messages -->
+      @if ($errors->any())
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-circle"></i>
+          <div>
+            <strong>Erreur de connexion</strong>
+            <ul class="alert-list mt-2">
+              @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+          </div>
+        </div>
+      @endif
+
+      <!-- Login Form -->
+      <form method="POST" action="{{ route('login') }}" novalidate>
+        @csrf
+
+        <!-- Email Input -->
+        <div class="form-group">
+          <label for="email">
+            <i class="bi bi-envelope"></i>
+            Adresse E-mail
+          </label>
+          <input
+            type="email"
+            class="form-control @error('email') is-invalid @enderror"
+            id="email"
+            name="email"
+            value="{{ old('email') }}"
+            placeholder="votre@email.com"
+            required
+            autofocus
+          />
+          @error('email')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Password Input -->
+        <div class="form-group">
+          <label for="password">
+            <i class="bi bi-lock"></i>
+            Mot de passe
+          </label>
+          <input
+            type="password"
+            class="form-control @error('password') is-invalid @enderror"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            required
+          />
+          @error('password')
+            <small class="d-block text-danger mt-2">
+              <i class="bi bi-exclamation-circle"></i> {{ $message }}
+            </small>
+          @enderror
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="remember_me"
+            name="remember"
+          />
+          <label class="form-check-label" for="remember_me">
+            Se souvenir de moi
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-login">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Se connecter
+        </button>
+      </form>
+    </div>
+
+    <!-- Card Footer -->
+    <div class="auth-footer">
+      <p>
+        Vous n'avez pas de compte ?
+        <a href="{{ route('register') }}">
+          <i class="bi bi-arrow-right"></i>
+          S'inscrire
+        </a>
+      </p>
+    </div>
+  </div>
 </div>
 @endsection

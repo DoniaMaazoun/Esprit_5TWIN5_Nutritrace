@@ -50,6 +50,14 @@ Route::prefix('admin')->name('backend.')->middleware(['auth', 'admin'])->group(f
         return view('backend.pages.dashboard');
     })->name('dashboard');
 
+    // User Approvals Management
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/approvals', [App\Http\Controllers\Admin\UserApprovalController::class, 'index'])->name('approvals');
+        Route::post('/{user}/approve', [App\Http\Controllers\Admin\UserApprovalController::class, 'approve'])->name('approve');
+        Route::post('/{user}/reject', [App\Http\Controllers\Admin\UserApprovalController::class, 'reject'])->name('reject');
+        Route::post('/{user}/reset-pending', [App\Http\Controllers\Admin\UserApprovalController::class, 'resetToPending'])->name('reset-pending');
+    });
+
     // Produits
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', function () {
