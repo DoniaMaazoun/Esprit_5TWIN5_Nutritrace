@@ -1,0 +1,33 @@
+<!-- Header -->
+<header class="header">
+  <div class="container header-inner">
+    <a href="{{ route('frontend.home') }}" class="logo">
+      <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+      <div class="logo-text">Farm to Fork<span>Traçabilité</span></div>
+    </a>
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+      <a href="{{ route('frontend.home') }}" class="@if(Route::currentRouteName() === 'frontend.home') active @endif">Accueil</a>
+      <a href="{{ route('frontend.about') }}" class="@if(Route::currentRouteName() === 'frontend.about') active @endif">À Propos</a>
+      <a href="{{ route('frontend.products') }}" class="@if(Route::currentRouteName() === 'frontend.products') active @endif">Produits</a>
+      <a href="{{ route('frontend.contact') }}" class="@if(Route::currentRouteName() === 'frontend.contact') active @endif">Contact</a>
+      <a href="{{ route('backend.dashboard') }}" class="btn btn--primary btn--sm">Scanner un Produit</a>
+    </nav>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<script>
+  const navToggle = document.querySelector('.nav-toggle');
+  const nav = document.querySelector('.nav');
+  if (navToggle && nav) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('nav-open');
+      navToggle.classList.toggle('active');
+      navToggle.setAttribute('aria-expanded', isOpen);
+    });
+  }
+</script>
