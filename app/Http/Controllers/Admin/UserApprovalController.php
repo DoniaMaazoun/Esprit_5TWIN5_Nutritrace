@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Mail\ProAccountApproved;
+use App\Mail\ProAccountRejected;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class UserApprovalController extends Controller
@@ -49,9 +52,14 @@ class UserApprovalController extends Controller
         // Mettre à jour le statut
         $user->update(['status' => 'approved']);
 
-        // TODO: Envoyer un email de confirmation
+        // Envoyer l'email d'approbation
+        try {
+            Mail::to($user->email)->send(new ProAccountApproved($user));
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi de l\'email d\'approbation: ' . $e->getMessage());
+        }
 
-        return back()->with('success', "Le compte de {$user->name} a été approuvé avec succès.");
+        return back()->with('success', "Le compte de {$user->name} a été approuvé avec succès. Un email de confirmation a été envoyé.");
     }
 
     /**
@@ -67,9 +75,14 @@ class UserApprovalController extends Controller
         // Mettre à jour le statut
         $user->update(['status' => 'rejected']);
 
-        // TODO: Envoyer un email de rejet
+        // Envoyer l'email de rejet
+        try {
+            Mail::to($user->email)->send(new ProAccountRejected($user, 'Les informations fournies ne correspondent pas à nos critères de vérification.'));
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi de l\'email de rejet: ' . $e->getMessage());
+        }
 
-        return back()->with('warning', "Le compte de {$user->name} a été rejeté.");
+        return back()->with('warning', "Le compte de {$user->name} a été rejeté. Un email de notification a été envoyé.");
     }
 
     /**
