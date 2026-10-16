@@ -43,6 +43,11 @@ Route::name('frontend.')->group(function () {
     })->name('contact');
 });
 
+// ==================== PRO DASHBOARD ====================
+Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\Pro\ProDashboardController::class, 'index'])->name('dashboard');
+});
+
 // ==================== BACKEND ====================
 Route::prefix('admin')->name('backend.')->middleware(['auth', 'admin'])->group(function () {
     // Dashboard

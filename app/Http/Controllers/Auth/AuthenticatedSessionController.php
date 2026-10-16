@@ -46,11 +46,16 @@ class AuthenticatedSessionController extends Controller
 
             $request->session()->regenerate();
 
-            // Redirect based on user role
+            // Redirect based on user role and status
             if ($user->isAdmin()) {
                 return redirect(route('backend.dashboard'));
             }
 
+            if ($user->isPro() && $user->isApproved()) {
+                return redirect(route('pro.dashboard'));
+            }
+
+            // Consumer or default → redirect to home
             return redirect(route('frontend.home'));
         }
 
