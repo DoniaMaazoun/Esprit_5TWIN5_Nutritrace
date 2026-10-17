@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -102,6 +103,22 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Check if user is an approved producer (Module 1 : exploitations & récoltes)
+     */
+    public function isProducer(): bool
+    {
+        return $this->isPro() && $this->isApproved() && $this->pro_type === 'producer';
+    }
+
+    /**
+     * Exploitations agricoles du producteur
+     */
+    public function farms(): HasMany
+    {
+        return $this->hasMany(Farm::class);
     }
 
     /**

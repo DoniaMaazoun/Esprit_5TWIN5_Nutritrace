@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE9C8"/><stop offset="1" stop-color="#F2B86B"/></linearGradient>
+    <radialGradient id="date" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#B9773E"/><stop offset="1" stop-color="#6B3D17"/></radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="400" cy="300" r="120" fill="#FFD27A" opacity=".55"/>
+  <path d="M0 470 Q180 410 380 460 T800 440 V600 H0 Z" fill="#D99A4E" opacity=".55"/>
+  <path d="M0 520 Q240 480 460 520 T800 510 V600 H0 Z" fill="#C2803A" opacity=".55"/>
+  <!-- palmier -->
+  <path d="M560 520 C550 420 560 320 590 230" stroke="#7A5230" stroke-width="22" stroke-linecap="round" fill="none"/>
+  <g fill="#3E7C3A">
+    <path d="M590 230 C530 180 450 190 410 230 C470 215 530 220 590 230 Z"/>
+    <path d="M590 230 C560 160 600 110 650 100 C620 150 610 190 590 230 Z"/>
+    <path d="M590 230 C650 180 730 190 770 230 C710 215 650 220 590 230 Z"/>
+    <path d="M590 230 C540 230 480 270 460 320 C510 280 550 260 590 230 Z"/>
+    <path d="M590 230 C640 240 700 280 720 330 C670 290 630 265 590 230 Z"/>
+  </g>
+  <!-- grappe de dattes -->
+  <g>
+    <path d="M240 210 C230 260 220 300 210 330" stroke="#B5832E" stroke-width="6" fill="none"/>
+    <ellipse cx="200" cy="350" rx="26" ry="40" fill="url(#date)"/>
+    <ellipse cx="250" cy="360" rx="26" ry="40" fill="url(#date)"/>
+    <ellipse cx="300" cy="350" rx="26" ry="40" fill="url(#date)"/>
+    <ellipse cx="225" cy="420" rx="26" ry="40" fill="url(#date)"/>
+    <ellipse cx="275" cy="425" rx="26" ry="40" fill="url(#date)"/>
+    <ellipse cx="250" cy="480" rx="26" ry="40" fill="url(#date)"/>
+    <g fill="#fff" opacity=".35"><ellipse cx="192" cy="335" rx="7" ry="10"/><ellipse cx="242" cy="345" rx="7" ry="10"/><ellipse cx="292" cy="335" rx="7" ry="10"/></g>
+  </g>
+</svg>

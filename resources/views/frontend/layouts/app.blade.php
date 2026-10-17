@@ -22,12 +22,20 @@
   
   <!-- App CSS -->
   <link rel="stylesheet" href="{{ asset('frontend/css/app.css') }}">
-  
+  <link rel="stylesheet" href="{{ asset('frontend/css/navbar.css') }}">
+
   @yield('extra-css')
 </head>
 <body>
 
   @include('frontend.layouts.header')
+
+  @if(session('welcome'))
+    <div class="ftn-toast" role="status">
+      <i class="fa-solid fa-circle-check"></i>
+      <div><strong>{{ session('welcome') }}</strong><small>Vous êtes connecté à Farm to Fork.</small></div>
+    </div>
+  @endif
 
   <main>
     @yield('content')

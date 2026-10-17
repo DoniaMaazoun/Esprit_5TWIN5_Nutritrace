@@ -17,5 +17,8 @@ class DatabaseSeeder extends Seeder
     {
         // Call the UserSeeder
         $this->call(UserSeeder::class);
+
+        // Module 1 (Producteur) : compte producteur + exploitations & récoltes de démo
+        $this->call(FarmSeeder::class);
     }
 }

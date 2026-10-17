@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E6F6EC"/><stop offset="1" stop-color="#A8DDBB"/></linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5CC07D"/><stop offset="1" stop-color="#2E8B57"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="660" cy="110" r="150" fill="#fff" opacity=".35"/>
+  <circle cx="110" cy="510" r="130" fill="#fff" opacity=".25"/>
+  <!-- pot -->
+  <path d="M300 400 h200 l-24 150 h-152 Z" fill="#C8673E"/>
+  <rect x="285" y="380" width="230" height="36" rx="10" fill="#B35631"/>
+  <!-- tiges et feuilles de menthe -->
+  <g stroke="#2E7D4F" stroke-width="7" stroke-linecap="round" fill="none">
+    <path d="M400 390 C400 300 395 230 400 140"/>
+    <path d="M360 390 C350 320 320 270 290 220"/>
+    <path d="M440 390 C450 320 480 270 510 220"/>
+  </g>
+  <g fill="url(#leaf)">
+    <path d="M400 150 C360 120 360 80 400 60 C440 80 440 120 400 150 Z"/>
+    <path d="M400 230 C350 220 330 190 345 160 C385 170 400 195 400 230 Z"/>
+    <path d="M400 230 C450 220 470 190 455 160 C415 170 400 195 400 230 Z"/>
+    <path d="M398 310 C345 305 320 275 332 240 C375 248 395 275 398 310 Z"/>
+    <path d="M402 310 C455 305 480 275 468 240 C425 248 405 275 402 310 Z"/>
+    <path d="M290 225 C250 210 240 175 262 150 C292 165 300 195 290 225 Z"/>
+    <path d="M330 290 C285 290 262 262 272 232 C310 238 328 262 330 290 Z"/>
+    <path d="M510 225 C550 210 560 175 538 150 C508 165 500 195 510 225 Z"/>
+    <path d="M470 290 C515 290 538 262 528 232 C490 238 472 262 470 290 Z"/>
+  </g>
+  <g stroke="#E6F6EC" stroke-width="3" opacity=".6" fill="none">
+    <path d="M400 140 V75"/><path d="M398 300 L345 250"/><path d="M402 300 L455 250"/>
+  </g>
+</svg>

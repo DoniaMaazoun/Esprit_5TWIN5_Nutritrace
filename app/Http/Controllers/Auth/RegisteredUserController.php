@@ -43,7 +43,7 @@ class RegisteredUserController extends Controller
         if ($accountType === 'pro') {
             $rules['pro_type'] = ['required', 'in:producer,processor,distributor'];
             $rules['company_name'] = ['required', 'string', 'max:255'];
-            $rules['tax_id'] = ['required', 'string', 'max:255', 'unique:users'];
+            $rules['tax_id'] = ['required', 'string', 'regex:/^[A-Za-z0-9\/\-]{7,20}$/', 'unique:users'];
         }
 
         $validated = $request->validate($rules, [
@@ -59,6 +59,9 @@ class RegisteredUserController extends Controller
             'company_name.required' => 'Le nom de l\'établissement est obligatoire pour un compte professionnel.',
             'tax_id.required' => 'L\'identifiant fiscal est obligatoire pour un compte professionnel.',
             'tax_id.unique' => 'Cet identifiant fiscal est déjà utilisé.',
+            'tax_id.regex' => 'Matricule fiscal invalide (7 à 20 caractères : lettres, chiffres, / ou -).',
+            'pro_type.in' => 'Le type d\'activité choisi est invalide.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
             'terms.required' => 'Vous devez accepter les conditions d\'utilisation.',
             'terms.accepted' => 'Vous devez accepter les conditions d\'utilisation.',
         ]);
