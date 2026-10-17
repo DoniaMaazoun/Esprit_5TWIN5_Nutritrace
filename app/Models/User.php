@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -102,6 +103,30 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Check if professional is a distributor (Module 3)
+     */
+    public function isDistributor(): bool
+    {
+        return $this->isPro() && $this->pro_type === 'distributor';
+    }
+
+    /**
+     * Module 3 - Expéditions du distributeur
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    /**
+     * Module 3 - Points de vente du distributeur
+     */
+    public function pointsOfSale(): HasMany
+    {
+        return $this->hasMany(PointOfSale::class);
     }
 
     /**

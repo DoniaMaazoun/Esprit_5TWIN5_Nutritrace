@@ -134,3 +134,6 @@ Route::prefix('admin')->name('backend.')->middleware(['auth', 'admin'])->group(f
         })->name('index');
     });
 });
+
+// ==================== MODULE 3 - DISTRIBUTEUR ====================
+require __DIR__.'/distributor.php';

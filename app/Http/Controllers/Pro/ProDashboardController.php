@@ -93,15 +93,15 @@ class ProDashboardController extends Controller
                         'title' => 'Suivi des Transports & Kilométrage',
                         'icon' => 'fa-route',
                         'description' => 'Suivez les trajets de livraison. Enregistrez les kilométrages et calcul de l\'empreinte carbone.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'route' => route('pro.distributor.shipments.index'),
+                        'badge' => 'Disponible'
                     ],
                     [
                         'title' => 'Points de Vente',
                         'icon' => 'fa-store',
                         'description' => 'Gérez vos points de vente. Assignez des stocks et visualisez les disponibilités.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'route' => route('pro.distributor.points-of-sale.index'),
+                        'badge' => 'Disponible'
                     ],
                     [
                         'title' => 'Statuts des Stocks',

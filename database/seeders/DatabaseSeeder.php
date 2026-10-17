@@ -17,5 +17,9 @@ class DatabaseSeeder extends Seeder
     {
         // Call the UserSeeder
         $this->call(UserSeeder::class);
+
+        // Module 3 - Distributeur
+        $this->call(TransportModeSeeder::class);
+        $this->call(DistributorDemoSeeder::class);
     }
 }

@@ -122,6 +122,25 @@
       </div>
     </li>
 
+    <!-- Module 3 : Logistique & Carbone -->
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="collapse" href="#logistics-menu" aria-expanded="false" aria-controls="logistics-menu">
+        <i class="menu-icon typcn typcn-location-arrow-outline"></i>
+        <span class="menu-title">Logistique & Carbone</span>
+        <i class="menu-arrow"></i>
+      </a>
+      <div class="collapse" id="logistics-menu">
+        <ul class="nav flex-column sub-menu">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('backend.logistics.shipments.index') }}">Expéditions</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('backend.logistics.transport-modes.index') }}">Facteurs d'émission</a>
+          </li>
+        </ul>
+      </div>
+    </li>
+
     <!-- Éco-Score -->
     <li class="nav-item">
       <a class="nav-link" href="{{ route('backend.ecoscore.index') }}">
