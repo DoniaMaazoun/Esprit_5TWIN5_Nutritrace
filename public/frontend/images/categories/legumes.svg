@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FDE7DF"/><stop offset="1" stop-color="#F7C6B4"/></linearGradient>
+    <linearGradient id="tomato" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F26B4E"/><stop offset="1" stop-color="#C9381F"/></linearGradient>
+    <linearGradient id="carrot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F59E3B"/><stop offset="1" stop-color="#E07B16"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="660" cy="110" r="150" fill="#fff" opacity=".35"/>
+  <circle cx="110" cy="520" r="120" fill="#fff" opacity=".25"/>
+  <ellipse cx="400" cy="500" rx="300" ry="34" fill="#B5502F" opacity=".15"/>
+  <!-- carotte -->
+  <g transform="rotate(-28 250 330)">
+    <path d="M190 250 Q250 230 310 250 L262 470 Q250 490 238 470 Z" fill="url(#carrot)"/>
+    <path d="M205 290 h40 M215 340 h36 M225 390 h28" stroke="#C2620E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M250 245 C230 190 200 170 185 150 M250 245 C250 180 260 160 270 135 M252 245 C280 195 310 180 330 168" stroke="#3F8F3A" stroke-width="16" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- tomate -->
+  <circle cx="455" cy="380" r="118" fill="url(#tomato)"/>
+  <ellipse cx="415" cy="335" rx="34" ry="22" fill="#fff" opacity=".35"/>
+  <path d="M455 268 l-38 -20 l20 32 l-42 4 l40 16 l-14 30 l34 -24 l34 24 l-14 -30 l40 -16 l-42 -4 l20 -32 Z" fill="#3F8F3A"/>
+  <!-- piment -->
+  <path d="M590 250 C640 280 650 380 600 470 C585 495 560 480 572 455 C610 380 600 320 575 285 Z" fill="#2F8A3F"/>
+  <path d="M588 252 C585 225 600 205 622 200" stroke="#2C5E1A" stroke-width="12" stroke-linecap="round" fill="none"/>
+</svg>

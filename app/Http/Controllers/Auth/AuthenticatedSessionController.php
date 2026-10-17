@@ -46,17 +46,10 @@ class AuthenticatedSessionController extends Controller
 
             $request->session()->regenerate();
 
-            // Redirect based on user role and status
-            if ($user->isAdmin()) {
-                return redirect(route('backend.dashboard'));
-            }
-
-            if ($user->isPro() && $user->isApproved()) {
-                return redirect(route('pro.dashboard'));
-            }
-
-            // Consumer or default → redirect to home
-            return redirect(route('frontend.home'));
+            // Tous les rôles arrivent sur l'accueil (ou sur la page protégée demandée avant la connexion).
+            // Leur espace (back-office, tableau de bord pro) reste accessible depuis le menu du compte.
+            return redirect()->intended(route('frontend.home'))
+                ->with('welcome', "Bienvenue, {$user->name} !");
         }
 
         return back()->withErrors([

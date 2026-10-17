@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7D6"/><stop offset="1" stop-color="#FCD98A"/></linearGradient>
+    <radialGradient id="orange" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FFB547"/><stop offset="1" stop-color="#E8780C"/></radialGradient>
+    <radialGradient id="lemon" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FFF07A"/><stop offset="1" stop-color="#E5C41A"/></radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="680" cy="110" r="150" fill="#fff" opacity=".35"/>
+  <circle cx="100" cy="500" r="130" fill="#fff" opacity=".3"/>
+  <ellipse cx="400" cy="500" rx="290" ry="32" fill="#B5791D" opacity=".15"/>
+  <circle cx="300" cy="360" r="125" fill="url(#orange)"/>
+  <ellipse cx="260" cy="315" rx="34" ry="22" fill="#fff" opacity=".35"/>
+  <path d="M300 236 C330 190 380 180 410 196 C385 225 345 238 300 236 Z" fill="#3F8F3A"/>
+  <!-- demi orange -->
+  <circle cx="520" cy="410" r="95" fill="#E8780C"/>
+  <circle cx="520" cy="410" r="82" fill="#FFC56B"/>
+  <g stroke="#FFE3A8" stroke-width="6">
+    <path d="M520 330 V490 M440 410 H600 M463 353 L577 467 M577 353 L463 467"/>
+  </g>
+  <circle cx="520" cy="410" r="10" fill="#FFE3A8"/>
+  <ellipse cx="620" cy="300" rx="62" ry="46" fill="url(#lemon)" transform="rotate(-25 620 300)"/>
+</svg>

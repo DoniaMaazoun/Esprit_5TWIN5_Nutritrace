@@ -3,7 +3,12 @@
 namespace App\Http\Controllers\Pro;
 
 use App\Http\Controllers\Controller;
+use App\Models\Harvest;
+use App\Models\User;
+use App\Services\AiAssistant;
+use App\Services\ProductIntelligence;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ProDashboardController extends Controller
 {
@@ -21,6 +26,11 @@ class ProDashboardController extends Controller
             return redirect()->route('login')->with('error', 'Accès refusé. Votre compte n\'est pas approuvé.');
         }
 
+        // Producteur : tableau de bord du Module 1 (exploitations & récoltes)
+        if ($user->isProducer()) {
+            return $this->producerDashboard($user);
+        }
+
         // Récupérer les données de l'utilisateur
         $proType = $user->pro_type;
         $companyName = $user->company_name;
@@ -34,25 +44,25 @@ class ProDashboardController extends Controller
                 'color' => '#28a745',
                 'modules' => [
                     [
-                        'title' => 'Gestion des Fermes/Parcelles',
+                        'title' => 'Gestion des Exploitations',
                         'icon' => 'fa-tree',
-                        'description' => 'Créez et gérez vos fermes et parcelles. Enregistrez les surfaces cultivées et les types de culture.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'description' => 'Créez et gérez vos fermes et parcelles : localisation sur carte, surfaces, pratiques culturales et description rédigée par l\'IA.',
+                        'route' => route('pro.farms.index'),
+                        'badge' => $user->farms()->count() . ' exploitation(s)'
                     ],
                     [
-                        'title' => 'Création de Lots de Récolte',
+                        'title' => 'Origine des Récoltes',
                         'icon' => 'fa-basket-shopping',
-                        'description' => 'Créez des lots de récolte avec dates, quantités et certifications. Préparez les données de traçabilité.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'description' => 'Déclarez vos lots de récolte avec dates, quantités et qualité. Rendement et cycle de culture calculés automatiquement.',
+                        'route' => route('pro.harvests.index'),
+                        'badge' => 'Disponible'
                     ],
                     [
-                        'title' => 'Génération de QR Codes',
+                        'title' => 'QR Codes & Assistant IA',
                         'icon' => 'fa-qrcode',
-                        'description' => 'Générez automatiquement des QR codes pour chaque lot. Incluez les infos traçabilité et certificats.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'description' => 'Chaque lot reçoit un QR code menant à sa page d\'origine. AgriBot répond à vos questions et analyse vos exploitations.',
+                        'route' => route('pro.harvests.index'),
+                        'badge' => 'Disponible'
                     ],
                 ]
             ],
@@ -126,6 +136,76 @@ class ProDashboardController extends Controller
             'taxId' => $taxId,
             'proType' => $proType,
             'dashboardData' => $dashboardData,
+        ]);
+    }
+
+    /**
+     * Indicateurs réels du producteur : production, stock, qualité, alertes, conseil de saison.
+     */
+    private function producerDashboard(User $user): View
+    {
+        $farms = $user->farms()->with('harvests')->orderBy('name')->get();
+        $harvests = Harvest::ownedBy($user)->with(['farm', 'category'])->orderByDesc('harvest_date')->get();
+        $kg = fn ($items) => $items->sum(fn (Harvest $h) => $h->quantityInKg());
+        $plotted = $harvests->filter(fn ($h) => $h->plot_area > 0);
+
+        $kpis = [
+            'farms' => $farms->count(),
+            'area' => $farms->sum('total_area'),
+            'harvests' => $harvests->count(),
+            'kg' => $kg($harvests),
+            'in_stock_kg' => $kg($harvests->where('status', 'in_stock')),
+            'grade_a' => $harvests->count() ? round($harvests->where('quality_grade', 'A')->count() / $harvests->count() * 100) : 0,
+            'yield' => $plotted->sum('plot_area') > 0 ? round($kg($plotted) / $plotted->sum('plot_area')) : null,
+            'no_photo' => $harvests->whereNull('image_path')->count(),
+        ];
+
+        $months = collect(range(11, 0))->map(fn ($i) => now()->startOfMonth()->subMonths($i));
+        $chart = [
+            'months' => $months->map(fn ($m) => $m->translatedFormat('M y'))->values(),
+            'kg' => $months->map(fn ($m) => round($kg($harvests->filter(fn ($h) => $h->harvest_date->isSameMonth($m)))))->values(),
+            'status' => collect(Harvest::STATUSES)->map(fn ($label, $key) => $harvests->where('status', $key)->count()),
+        ];
+
+        // Prévision 3 mois (régression linéaire sur la série mensuelle)
+        $intel = app(ProductIntelligence::class);
+        $forecast = $intel->forecast($chart['kg']->all());
+        $chart['forecastMonths'] = collect(range(1, 3))->map(fn ($i) => now()->startOfMonth()->addMonths($i)->translatedFormat('M y'))->values();
+        $chart['forecast'] = $forecast['values'];
+
+        $alerts = [];
+        // Fraîcheur : lots expirés ou à écouler rapidement
+        $fresh = $harvests->where('status', 'in_stock')->map(fn ($h) => [$h, $intel->freshness($h)]);
+        $expired = $fresh->filter(fn ($x) => $x[1]['level'] === 'expired');
+        $soon = $fresh->filter(fn ($x) => $x[1]['level'] === 'low');
+        if ($expired->isNotEmpty()) {
+            $alerts[] = ['danger', 'fa-triangle-exclamation', "{$expired->count()} lot(s) en stock ont dépassé leur date limite estimée : " . $expired->map(fn ($x) => $x[0]->product_name)->unique()->implode(', ') . '.', route('pro.harvests.index', ['status' => 'in_stock'])];
+        }
+        foreach ($soon->take(3) as [$h, $f]) {
+            $alerts[] = ['warning', 'fa-hourglass-half', "{$h->product_name} ({$h->farm->name}) : à écouler avant le {$f['best_before']->format('d/m')} (fraîcheur {$f['percent']} %).", route('pro.harvests.show', $h)];
+        }
+        // Conformité : lots à compléter
+        $weak = $harvests->filter(fn ($h) => $intel->risk($h)['level'] !== 'low')->count();
+        if ($weak) {
+            $alerts[] = ['info', 'fa-shield-halved', "{$weak} déclaration(s) à compléter pour améliorer votre score de conformité.", route('pro.harvests.index')];
+        }
+        if ($kpis['no_photo']) {
+            $alerts[] = ['info', 'fa-camera', "{$kpis['no_photo']} produit(s) sans photo : ajoutez-en pour le catalogue.", route('pro.harvests.index')];
+        }
+        foreach ($farms->where('status', 'active')->filter(fn ($f) => $f->harvests->isEmpty()) as $farm) {
+            $alerts[] = ['warning', 'fa-seedling', "« {$farm->name} » n'a encore aucune récolte déclarée.", route('pro.harvests.create', ['farm' => $farm->id])];
+        }
+
+        return view('pro.producer-dashboard', [
+            'user' => $user,
+            'farms' => $farms,
+            'recent' => $harvests->take(5),
+            'kpis' => $kpis,
+            'chart' => $chart,
+            'alerts' => $alerts,
+            'seasonTip' => app(AiAssistant::class)->seasonalAdvice((int) now()->month),
+            'forecast' => $forecast,
+            'stockValue' => $harvests->where('status', 'in_stock')->sum(fn ($h) => $intel->price($h)['value']),
         ]);
     }
 }

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4EFE4"/><stop offset="1" stop-color="#DCCDAE"/></linearGradient>
+    <linearGradient id="pod" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CC36A"/><stop offset="1" stop-color="#4F8F2E"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="660" cy="120" r="150" fill="#fff" opacity=".35"/>
+  <circle cx="120" cy="500" r="120" fill="#fff" opacity=".3"/>
+  <!-- cosse ouverte -->
+  <path d="M150 300 C250 190 520 170 650 260 C520 330 260 360 150 300 Z" fill="url(#pod)"/>
+  <path d="M170 300 C270 230 500 215 625 262 C500 300 280 320 170 300 Z" fill="#CFE8B3"/>
+  <g fill="#6FAE45">
+    <circle cx="250" cy="282" r="30"/><circle cx="330" cy="270" r="32"/><circle cx="415" cy="262" r="32"/><circle cx="500" cy="260" r="30"/><circle cx="572" cy="262" r="24"/>
+  </g>
+  <g fill="#fff" opacity=".35"><circle cx="240" cy="272" r="8"/><circle cx="320" cy="258" r="8"/><circle cx="405" cy="250" r="8"/><circle cx="490" cy="250" r="8"/></g>
+  <path d="M650 260 C690 240 710 210 700 180" stroke="#4F8F2E" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- bol de pois chiches -->
+  <path d="M230 420 h340 a170 120 0 0 1 -340 0 Z" fill="#B07A43"/>
+  <ellipse cx="400" cy="420" rx="170" ry="26" fill="#8C5C2E"/>
+  <g fill="#E9C98B">
+    <circle cx="320" cy="410" r="20"/><circle cx="360" cy="402" r="20"/><circle cx="400" cy="398" r="20"/><circle cx="440" cy="402" r="20"/><circle cx="480" cy="410" r="20"/>
+    <circle cx="340" cy="388" r="18"/><circle cx="380" cy="382" r="18"/><circle cx="420" cy="382" r="18"/><circle cx="460" cy="388" r="18"/>
+  </g>
+</svg>
