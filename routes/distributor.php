@@ -7,6 +7,7 @@ use App\Http\Controllers\Distributor\PointOfSaleController;
 use App\Http\Controllers\Distributor\ShipmentController;
 use App\Http\Controllers\Distributor\ShipmentEventController;
 use App\Http\Controllers\Distributor\ShipmentLegController;
+use App\Http\Controllers\Distributor\ShipmentPdfController;
 use App\Http\Controllers\Distributor\TransportRecommendationController;
 use App\Http\Middleware\DistributorMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,9 @@ Route::prefix('pro/distributor')->name('pro.distributor.')->middleware(['auth', 
     // Recommandation IA du mode de transport
     Route::post('shipments/{shipment}/transport-recommendation', TransportRecommendationController::class)
         ->name('shipments.transport-recommendation');
+
+    // Rapport de traçabilité PDF
+    Route::get('shipments/{shipment}/pdf', ShipmentPdfController::class)->name('shipments.pdf');
 });
 
 // ==================== BACKEND (ADMIN) ====================

@@ -38,8 +38,14 @@
     <tr><td>Produit</td><td>{{ $shipment->product_name }} · {{ $n($shipment->weight_kg) }} kg</td></tr>
     <tr><td>Départ</td><td>{{ $shipment->origin_address }}@if($shipment->departed_at) · {{ $shipment->departed_at->format('d/m/Y H:i') }}@endif</td></tr>
     <tr><td>Destination</td><td>
-      @if($shipment->pointOfSale){{ $shipment->pointOfSale->name }}, {{ $shipment->pointOfSale->address }}, {{ $shipment->pointOfSale->city }}@else — @endif
-      @if($shipment->delivered_at) · livrée le {{ $shipment->delivered_at->format('d/m/Y H:i') }}@endif
+      @if($shipment->pointOfSale)
+        {{ $shipment->pointOfSale->name }}, {{ $shipment->pointOfSale->address }}, {{ $shipment->pointOfSale->city }}
+      @else
+        —
+      @endif
+      @if($shipment->delivered_at)
+        · livrée le {{ $shipment->delivered_at->format('d/m/Y H:i') }}
+      @endif
     </td></tr>
   </table>
 
@@ -47,7 +53,11 @@
   @if($shipment->harvest)
     <table class="info">
       <tr><td>Code du lot</td><td>{{ $shipment->harvest->batch_code }}</td></tr>
-      <tr><td>Produit</td><td>{{ $shipment->harvest->product_name }}@if($shipment->harvest->variety) ({{ $shipment->harvest->variety }})@endif@if($shipment->harvest->category) · {{ $shipment->harvest->category->name }}@endif</td></tr>
+      <tr><td>Produit</td><td>
+        {{ $shipment->harvest->product_name }}
+        @if($shipment->harvest->variety) ({{ $shipment->harvest->variety }}) @endif
+        @if($shipment->harvest->category) · {{ $shipment->harvest->category->name }} @endif
+      </td></tr>
       <tr><td>Récolté le</td><td>{{ $shipment->harvest->harvest_date->format('d/m/Y') }} · qualité {{ $shipment->harvest->quality_grade }}</td></tr>
       <tr><td>Ferme</td><td>{{ $shipment->harvest->farm->name }}, {{ $shipment->harvest->farm->city }} ({{ $shipment->harvest->farm->governorate }})</td></tr>
     </table>

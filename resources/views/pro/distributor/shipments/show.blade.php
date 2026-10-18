@@ -16,6 +16,9 @@
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
       <span><i class="fa-solid fa-route"></i> Expédition {{ $shipment->reference }} @include('pro.distributor.partials.status-badge')</span>
       <div class="d-flex gap-2">
+        <a href="{{ route('pro.distributor.shipments.pdf', $shipment) }}" class="btn btn-outline-success btn-sm">
+          <i class="fa-solid fa-file-pdf"></i> Télécharger le PDF
+        </a>
         <a href="{{ route('pro.distributor.shipments.edit', $shipment) }}" class="btn btn-outline-primary btn-sm">
           <i class="fa-solid fa-pen"></i> Modifier
         </a>
