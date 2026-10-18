@@ -113,6 +113,7 @@
       <h6 class="mt-4 mb-3">Ajouter une étape</h6>
       <form method="POST" action="{{ route('pro.distributor.shipments.legs.store', $shipment) }}">
         @csrf
+        @include('pro.distributor.shipments._recommendation')
         @include('pro.distributor.legs._form', ['leg' => new \App\Models\ShipmentLeg()])
         <p class="form-text mt-2 mb-0">CO2 (kg) = distance (km) × poids (tonnes) × facteur d'émission du mode de transport (ADEME).</p>
         <button type="submit" class="btn btn-success mt-3"><i class="fa-solid fa-plus"></i> Ajouter l'étape</button>
