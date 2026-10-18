@@ -130,6 +130,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is an approved producer (Module 1 : exploitations & récoltes)
+     */
+    public function isProducer(): bool
+    {
+        return $this->isPro() && $this->isApproved() && $this->pro_type === 'producer';
+    }
+
+    /**
+     * Exploitations agricoles du producteur
+     */
+    public function farms(): HasMany
+    {
+        return $this->hasMany(Farm::class);
+    }
+
+    /**
      * Get professional type label in French
      */
     public function getProTypeLabel(): string

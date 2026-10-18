@@ -26,7 +26,7 @@ class ShipmentController extends Controller
 
     public function show(Shipment $shipment): View
     {
-        $shipment->load(['user', 'pointOfSale', 'legs.transportMode', 'events']);
+        $shipment->load(['user', 'harvest.farm', 'pointOfSale', 'legs.transportMode', 'events']);
 
         return view('backend.pages.logistics.shipments.show', compact('shipment'));
     }

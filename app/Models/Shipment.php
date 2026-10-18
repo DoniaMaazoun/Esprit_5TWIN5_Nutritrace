@@ -11,7 +11,7 @@ class Shipment extends Model
     protected $fillable = [
         'reference',
         'user_id',
-        'batch_id',
+        'harvest_id',
         'product_name',
         'weight_kg',
         'origin_address',
@@ -69,7 +69,13 @@ class Shipment extends Model
         return $this->belongsTo(PointOfSale::class);
     }
 
-    // TODO: relation batch() vers App\Models\Batch quand le module 1 sera fusionné
+    /**
+     * Lot transporté, déclaré par un producteur (module 1)
+     */
+    public function harvest(): BelongsTo
+    {
+        return $this->belongsTo(Harvest::class);
+    }
 
     /**
      * Étapes de transport, dans l'ordre

@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Assistant IA du Module Producteur (API compatible OpenAI : Groq, OpenAI, Mistral, Gemini...)
+    'ai' => [
+        'key' => env('AI_API_KEY'),
+        'base_url' => env('AI_BASE_URL', 'https://api.groq.com/openai/v1'),
+        'model' => env('AI_MODEL', 'llama-3.3-70b-versatile'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

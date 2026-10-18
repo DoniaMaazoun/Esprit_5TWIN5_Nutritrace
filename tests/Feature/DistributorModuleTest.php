@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Harvest;
 use App\Models\PointOfSale;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use App\Models\User;
+use Database\Seeders\FarmSeeder;
 use Database\Seeders\TransportModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -142,6 +144,41 @@ class DistributorModuleTest extends TestCase
         $this->delete(route('pro.distributor.shipments.destroy', $shipment))->assertRedirect();
         $this->assertDatabaseCount('shipments', 0);
         $this->assertDatabaseCount('shipment_events', 0);
+    }
+
+    public function test_shipment_is_linked_to_a_producer_harvest(): void
+    {
+        // Lots de démo du module 1 (exploitations & récoltes)
+        $this->seed(FarmSeeder::class);
+        $harvest = Harvest::where('status', 'in_stock')->firstOrFail();
+
+        $this->actingAs($this->distributor);
+        $this->get(route('pro.distributor.shipments.create'))->assertOk()->assertSee($harvest->batch_code);
+
+        // Sans nom de produit : il est repris du lot
+        $this->post(route('pro.distributor.shipments.store'), [
+            'harvest_id' => $harvest->id,
+            'weight_kg' => 500,
+            'origin_address' => $harvest->farm->city,
+            'status' => 'planned',
+        ])->assertRedirect();
+
+        $shipment = Shipment::firstOrFail();
+        $this->assertTrue($shipment->harvest->is($harvest));
+        $this->assertSame($harvest->product_name, $shipment->product_name);
+        $this->get(route('pro.distributor.shipments.show', $shipment))->assertOk()->assertSee($harvest->batch_code);
+
+        // Un lot inexistant est refusé
+        $this->post(route('pro.distributor.shipments.store'), [
+            'harvest_id' => 999999,
+            'weight_kg' => 500,
+            'origin_address' => 'Sfax',
+            'status' => 'planned',
+        ])->assertSessionHasErrors('harvest_id');
+
+        // La suppression du lot ne supprime pas l'expédition
+        $harvest->delete();
+        $this->assertNull($shipment->fresh()->harvest_id);
     }
 
     public function test_distributor_cannot_access_another_distributors_shipment(): void

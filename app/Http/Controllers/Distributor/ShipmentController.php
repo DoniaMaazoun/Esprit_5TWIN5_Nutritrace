@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Distributor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Harvest;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class ShipmentController extends Controller
         return view('pro.distributor.shipments.create', [
             'shipment' => new Shipment(['status' => 'planned']),
             'pointsOfSale' => auth()->user()->pointsOfSale()->orderBy('name')->get(),
+            'harvests' => $this->availableHarvests(),
         ]);
     }
 
@@ -52,7 +54,7 @@ class ShipmentController extends Controller
     {
         $this->authorizeOwner($shipment);
 
-        $shipment->load(['pointOfSale', 'legs.transportMode', 'events']);
+        $shipment->load(['harvest.farm', 'pointOfSale', 'legs.transportMode', 'events']);
 
         return view('pro.distributor.shipments.show', [
             'shipment' => $shipment,
@@ -67,6 +69,7 @@ class ShipmentController extends Controller
         return view('pro.distributor.shipments.edit', [
             'shipment' => $shipment,
             'pointsOfSale' => auth()->user()->pointsOfSale()->orderBy('name')->get(),
+            'harvests' => $this->availableHarvests($shipment),
         ]);
     }
 
@@ -93,9 +96,9 @@ class ShipmentController extends Controller
 
     private function validateData(Request $request): array
     {
-        return $request->validate([
-            'batch_id' => ['nullable', 'integer', 'min:1'],
-            'product_name' => ['required', 'string', 'max:255'],
+        $data = $request->validate([
+            'harvest_id' => ['nullable', 'integer', Rule::exists('harvests', 'id')],
+            'product_name' => ['required_without:harvest_id', 'nullable', 'string', 'max:255'],
             'weight_kg' => ['required', 'numeric', 'min:0.01'],
             'origin_address' => ['required', 'string', 'max:255'],
             'point_of_sale_id' => [
@@ -106,6 +109,27 @@ class ShipmentController extends Controller
             'departed_at' => ['nullable', 'date'],
             'delivered_at' => ['nullable', 'date', 'after_or_equal:departed_at'],
         ]);
+
+        // Sans nom saisi, on reprend celui du lot choisi
+        if (empty($data['product_name']) && !empty($data['harvest_id'])) {
+            $data['product_name'] = Harvest::whereKey($data['harvest_id'])->value('product_name');
+        }
+
+        return $data;
+    }
+
+    /**
+     * Lots du module 1 qu'un distributeur peut expédier (en stock ou déjà expédiés),
+     * plus le lot déjà relié à l'expédition modifiée
+     */
+    private function availableHarvests(?Shipment $shipment = null)
+    {
+        return Harvest::with('farm')
+            ->where(fn ($query) => $query
+                ->whereIn('status', ['in_stock', 'shipped'])
+                ->when($shipment?->harvest_id, fn ($q, $id) => $q->orWhere('id', $id)))
+            ->orderByDesc('harvest_date')
+            ->get();
     }
 
     /**

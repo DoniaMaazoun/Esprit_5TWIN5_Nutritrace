@@ -44,7 +44,7 @@
       </div>
       <dl class="row mb-0">
         <dt class="col-sm-3">Produit</dt>
-        <dd class="col-sm-9">{{ $shipment->product_name }}@if($shipment->batch_id) · Lot n° {{ $shipment->batch_id }}@endif</dd>
+        <dd class="col-sm-9">{{ $shipment->product_name }}@if($shipment->harvest) · Lot <a href="{{ $shipment->harvest->traceabilityUrl() }}" target="_blank">{{ $shipment->harvest->batch_code }}</a> ({{ $shipment->harvest->farm->name }})@endif</dd>
         <dt class="col-sm-3">Départ</dt>
         <dd class="col-sm-9">{{ $shipment->origin_address }}@if($shipment->departed_at) · {{ $shipment->departed_at->format('d/m/Y H:i') }}@endif</dd>
         <dt class="col-sm-3">Destination</dt>

@@ -19,7 +19,7 @@
           <dt class="col-sm-5">Distributeur</dt>
           <dd class="col-sm-7">{{ $shipment->user->company_name ?? $shipment->user->name }}</dd>
           <dt class="col-sm-5">Produit</dt>
-          <dd class="col-sm-7">{{ $shipment->product_name }}@if($shipment->batch_id) (lot n° {{ $shipment->batch_id }})@endif</dd>
+          <dd class="col-sm-7">{{ $shipment->product_name }}@if($shipment->harvest) (lot <a href="{{ route('backend.products.edit', $shipment->harvest) }}">{{ $shipment->harvest->batch_code }}</a>)@endif</dd>
           <dt class="col-sm-5">Poids</dt>
           <dd class="col-sm-7">{{ number_format($shipment->weight_kg, 2, ',', ' ') }} kg</dd>
           <dt class="col-sm-5">Départ</dt>

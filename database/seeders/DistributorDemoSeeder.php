@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Harvest;
 use App\Models\PointOfSale;
 use App\Models\Shipment;
 use App\Models\TransportMode;
@@ -37,10 +38,14 @@ class DistributorDemoSeeder extends Seeder
             'city' => 'Sfax',
         ]);
 
+        // Lot d'olives déclaré par le producteur de démo (FarmSeeder, module 1)
+        $harvest = Harvest::where('product_name', 'Olive')->orderByDesc('harvest_date')->first();
+
         $shipment = Shipment::create([
             'reference' => Shipment::nextReference(),
             'user_id' => $distributor->id,
-            'product_name' => 'Huile d\'olive extra vierge',
+            'harvest_id' => $harvest?->id,
+            'product_name' => $harvest ? "{$harvest->product_name} {$harvest->variety}" : 'Olive',
             'weight_kg' => 1200,
             'origin_address' => 'Huilerie, Sfax',
             'point_of_sale_id' => $store->id,

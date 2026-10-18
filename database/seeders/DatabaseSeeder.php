@@ -18,7 +18,10 @@ class DatabaseSeeder extends Seeder
         // Call the UserSeeder
         $this->call(UserSeeder::class);
 
-        // Module 3 - Distributeur
+        // Module 1 (Producteur) : compte producteur + exploitations & récoltes de démo
+        $this->call(FarmSeeder::class);
+
+        // Module 3 - Distributeur (après le module 1 : les expéditions sont liées aux récoltes)
         $this->call(TransportModeSeeder::class);
         $this->call(DistributorDemoSeeder::class);
     }

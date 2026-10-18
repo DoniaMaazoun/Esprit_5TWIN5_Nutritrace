@@ -229,6 +229,10 @@
 <!-- Dashboard Content -->
 <div class="pro-dashboard">
   <div class="container">
+    @if(session('error'))
+      <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> {{ session('error') }}</div>
+    @endif
+
     <!-- Welcome Card -->
     <div class="pro-welcome">
       <h2>Bienvenue, {{ $user->name }} ! 👋</h2>

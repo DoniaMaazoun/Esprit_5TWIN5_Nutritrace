@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('reference')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            // Lot provenant des modules 1/2 (table "batches", pas encore créée) :
-            // la clé étrangère sera ajoutée quand le module 1 sera fusionné
-            $table->unsignedBigInteger('batch_id')->nullable()->index();
+            // Le lien vers le lot (harvest_id) est ajouté par la migration
+            // 2026_10_18_000001, exécutée après la création de la table harvests (module 1)
             $table->string('product_name');
             $table->decimal('weight_kg', 12, 2);
             $table->string('origin_address');

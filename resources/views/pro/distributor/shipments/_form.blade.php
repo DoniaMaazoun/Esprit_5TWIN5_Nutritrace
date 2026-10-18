@@ -1,16 +1,23 @@
 <div class="row g-3">
-  <div class="col-md-8">
+  <div class="col-md-6">
+    <label for="harvest_id" class="form-label">Lot transporté (module Producteur)</label>
+    <select id="harvest_id" name="harvest_id" class="form-select @error('harvest_id') is-invalid @enderror">
+      <option value="">— Aucun lot relié —</option>
+      @foreach($harvests as $harvest)
+        <option value="{{ $harvest->id }}" @selected((string) old('harvest_id', $shipment->harvest_id) === (string) $harvest->id)>
+          {{ $harvest->batch_code }} · {{ $harvest->product_name }} ({{ $harvest->farm->name }})
+        </option>
+      @endforeach
+    </select>
+    <div class="form-text">Optionnel : relie l'expédition à un lot déclaré par un producteur.</div>
+    @error('harvest_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+  </div>
+  <div class="col-md-6">
     <label for="product_name" class="form-label">Produit transporté *</label>
     <input type="text" id="product_name" name="product_name" class="form-control @error('product_name') is-invalid @enderror"
-           value="{{ old('product_name', $shipment->product_name) }}" required>
+           value="{{ old('product_name', $shipment->product_name) }}">
+    <div class="form-text">Laissez vide pour reprendre le nom du lot choisi.</div>
     @error('product_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-  </div>
-  <div class="col-md-4">
-    <label for="batch_id" class="form-label">N° de lot (modules 1/2)</label>
-    <input type="number" id="batch_id" name="batch_id" class="form-control @error('batch_id') is-invalid @enderror"
-           value="{{ old('batch_id', $shipment->batch_id) }}">
-    <div class="form-text">Optionnel, sera relié aux lots du module Producteur.</div>
-    @error('batch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
   </div>
   <div class="col-md-4">
     <label for="weight_kg" class="form-label">Poids total (kg) *</label>
