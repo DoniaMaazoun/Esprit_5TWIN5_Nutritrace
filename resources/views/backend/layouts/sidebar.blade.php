@@ -10,6 +10,7 @@
   $is = fn (...$patterns) => request()->routeIs(...$patterns);
   $inTrace = $is('backend.history.*');
   $inCertif = $is('backend.certifications.*', 'backend.labels.*', 'backend.greenwashing.*');
+  $inLogistics = $is('backend.logistics.*');
 @endphp
 
 <style>
@@ -97,6 +98,16 @@
         <a href="{{ route('backend.certifications.index') }}" class="{{ $is('backend.certifications.*') ? 'active' : '' }}">Certificats <span class="ftf-soon">bientôt</span></a>
         <a href="{{ route('backend.labels.index') }}" class="{{ $is('backend.labels.*') ? 'active' : '' }}">Vérifier labels <span class="ftf-soon">bientôt</span></a>
         <a href="{{ route('backend.greenwashing.index') }}" class="{{ $is('backend.greenwashing.*') ? 'active' : '' }}">Anti-greenwashing <span class="ftf-soon">bientôt</span></a>
+      </div>
+    </div>
+    <!-- Module 3 : Logistique & Carbone -->
+    <a class="ftf-link {{ $inLogistics ? 'active' : '' }}" data-toggle="collapse" href="#ftf-logistics" aria-expanded="{{ $inLogistics ? 'true' : 'false' }}" aria-controls="ftf-logistics">
+      <i class="mdi mdi-truck-delivery ftf-ic"></i> Logistique & Carbone <i class="mdi mdi-chevron-right ftf-caret"></i>
+    </a>
+    <div class="collapse {{ $inLogistics ? 'show' : '' }}" id="ftf-logistics">
+      <div class="ftf-sub">
+        <a href="{{ route('backend.logistics.shipments.index') }}" class="{{ $is('backend.logistics.shipments.*') ? 'active' : '' }}">Expéditions</a>
+        <a href="{{ route('backend.logistics.transport-modes.index') }}" class="{{ $is('backend.logistics.transport-modes.*') ? 'active' : '' }}">Facteurs d'émission</a>
       </div>
     </div>
     <a href="{{ route('backend.ecoscore.index') }}" class="ftf-link {{ $is('backend.ecoscore.*') ? 'active' : '' }}">

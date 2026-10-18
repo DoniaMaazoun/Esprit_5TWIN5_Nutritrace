@@ -106,6 +106,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if professional is a distributor (Module 3)
+     */
+    public function isDistributor(): bool
+    {
+        return $this->isPro() && $this->pro_type === 'distributor';
+    }
+
+    /**
+     * Module 3 - Expéditions du distributeur
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    /**
+     * Module 3 - Points de vente du distributeur
+     */
+    public function pointsOfSale(): HasMany
+    {
+        return $this->hasMany(PointOfSale::class);
+    }
+
+    /**
      * Check if user is an approved producer (Module 1 : exploitations & récoltes)
      */
     public function isProducer(): bool
