@@ -9,7 +9,7 @@
     <button type="button" class="btn btn-outline-success btn-sm" id="ai-recommend-btn">
       <i class="fa-solid fa-wand-magic-sparkles"></i> Recommandation IA
     </button>
-    <span class="form-text m-0">Renseignez d'abord la distance et le poids de l'étape ci-dessous.</span>
+    <span class="form-text m-0">Renseignez d'abord la distance totale et le poids ci-dessous. L'IA tient compte de la nature du lot.</span>
   </div>
 
   <div id="ai-recommend-error" class="alert alert-warning mt-3 mb-0 d-none"></div>
@@ -19,36 +19,51 @@
       <strong><i class="fa-solid fa-leaf text-success"></i> <span data-field="name"></span></strong>
       <span class="badge bg-secondary" data-field="source"></span>
     </div>
+    <div class="small mt-1">
+      <span class="badge bg-light text-dark border" data-field="product"></span>
+      <span class="badge bg-info text-dark d-none" data-field="cold"><i class="fa-solid fa-snowflake"></i> Transport réfrigéré conseillé</span>
+    </div>
     <p class="mb-2 mt-2" data-field="explanation"></p>
+
+    <ol class="small mb-2 d-none" data-field="legs"></ol>
+
     <div class="row text-center g-2 mb-2">
       <div class="col-sm-4"><div class="fw-bold" data-field="co2"></div><div class="small text-muted">CO2 estimé</div></div>
       <div class="col-sm-4"><div class="fw-bold" data-field="hours"></div><div class="small text-muted">Durée estimée</div></div>
       <div class="col-sm-4"><div class="fw-bold text-success" data-field="saving"></div><div class="small text-muted" data-field="saving-label">Gain vs camion</div></div>
     </div>
-    <button type="button" class="btn btn-success btn-sm" id="ai-recommend-apply">
-      <i class="fa-solid fa-check"></i> Utiliser ce mode pour l'étape
-    </button>
+
+    <div class="d-none" data-field="tips-box">
+      <div class="small fw-bold"><i class="fa-solid fa-lightbulb text-warning"></i> Conseils</div>
+      <ul class="small mb-2" data-field="tips"></ul>
+    </div>
+
+    <button type="button" class="btn btn-success btn-sm" id="ai-recommend-apply"></button>
   </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const box = document.getElementById('ai-recommendation');
+    const form = box.closest('form') ?? box.parentElement;
     const button = document.getElementById('ai-recommend-btn');
+    const applyButton = document.getElementById('ai-recommend-apply');
     const errorBox = document.getElementById('ai-recommend-error');
     const result = document.getElementById('ai-recommend-result');
     const field = (name) => result.querySelector(`[data-field="${name}"]`);
     const kg = (value) => Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' kg CO2e';
-    let recommendedId = null;
+    const fillList = (list, items) => {
+      list.replaceChildren(...items.map((text) => Object.assign(document.createElement('li'), { textContent: text })));
+    };
+    let recommended = null;
 
     button.addEventListener('click', async () => {
-      const form = box.closest('form') ?? box.parentElement;
       const distance = form.querySelector('[name="distance_km"]')?.value;
       const weight = form.querySelector('[name="weight_kg"]')?.value;
 
       errorBox.classList.add('d-none');
       if (!distance) {
-        errorBox.textContent = 'Indiquez la distance de l\'étape pour obtenir une recommandation.';
+        errorBox.textContent = 'Indiquez la distance pour obtenir une recommandation.';
         errorBox.classList.remove('d-none');
         return;
       }
@@ -67,18 +82,36 @@
           throw new Error(data.message || 'Recommandation indisponible.');
         }
 
-        recommendedId = data.recommended.id;
-        field('name').textContent = data.recommended.name;
+        recommended = data.recommended;
+        const isPlan = recommended.type === 'plan';
+
+        field('name').textContent = (isPlan ? 'Plan multimodal : ' : '') + recommended.name;
         field('source').textContent = data.source === 'ai' ? 'IA' : 'Calcul ADEME (hors-ligne)';
+        field('product').textContent = (data.product.name || 'Produit') + ' · ' + data.product.label
+          + (data.product.age_days !== null ? ` · récolté il y a ${data.product.age_days} j` : '')
+          + (data.max_hours ? ` · délai retenu ${data.max_hours} h` : '');
+        field('cold').classList.toggle('d-none', !data.product.refrigerated);
         field('explanation').textContent = data.explanation;
-        field('co2').textContent = kg(data.recommended.co2_kg);
-        field('hours').textContent = '≈ ' + data.recommended.hours + ' h';
+
+        fillList(field('legs'), isPlan
+          ? recommended.legs.map((leg) => `${leg.name} : ${leg.distance_km} km, ${kg(leg.co2_kg)}, ≈ ${leg.hours} h`)
+          : []);
+        field('legs').classList.toggle('d-none', !isPlan);
+
+        field('co2').textContent = kg(recommended.co2_kg);
+        field('hours').textContent = '≈ ' + recommended.hours + ' h';
         if (data.reference) {
           field('saving').textContent = kg(data.saving_kg) + (data.saving_percent !== null ? ` (${data.saving_percent} %)` : '');
           field('saving-label').textContent = 'Gain vs ' + data.reference.name;
         } else {
           field('saving').textContent = '—';
         }
+
+        fillList(field('tips'), data.tips);
+        field('tips-box').classList.toggle('d-none', data.tips.length === 0);
+
+        applyButton.innerHTML = '<i class="fa-solid fa-check"></i> '
+          + (isPlan ? 'Remplir la 1re étape du plan' : 'Utiliser ce mode pour l\'étape');
         result.classList.remove('d-none');
       } catch (error) {
         errorBox.textContent = error.message;
@@ -89,11 +122,19 @@
       }
     });
 
-    document.getElementById('ai-recommend-apply').addEventListener('click', () => {
-      const select = (box.closest('form') ?? box.parentElement).querySelector('[name="transport_mode_id"]');
-      if (select && recommendedId) {
-        select.value = recommendedId;
+    applyButton.addEventListener('click', () => {
+      if (!recommended) {
+        return;
+      }
+      const select = form.querySelector('[name="transport_mode_id"]');
+      if (select) {
+        select.value = recommended.legs[0].id;
         select.dispatchEvent(new Event('change'));
+      }
+      // Pour un plan, l'étape ajoutée correspond au premier tronçon
+      const distance = form.querySelector('[name="distance_km"]');
+      if (distance && recommended.type === 'plan') {
+        distance.value = recommended.legs[0].distance_km;
       }
     });
   });

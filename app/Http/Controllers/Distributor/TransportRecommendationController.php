@@ -23,10 +23,17 @@ class TransportRecommendationController extends Controller
             'max_hours' => ['nullable', 'numeric', 'min:1', 'max:2000'],
         ]);
 
-        return response()->json($recommender->recommend(
+        $shipment->load('harvest.category', 'pointOfSale');
+
+        $result = $recommender->recommend(
             (float) $data['distance_km'],
             (float) ($data['weight_kg'] ?? $shipment->weight_kg),
             isset($data['max_hours']) ? (float) $data['max_hours'] : null,
-        ));
+            $shipment,
+        );
+
+        return $result
+            ? response()->json($result)
+            : response()->json(['message' => 'Aucun mode de transport actif ne permet de livrer ce trajet.'], 422);
     }
 }
