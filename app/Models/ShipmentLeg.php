@@ -13,10 +13,13 @@ class ShipmentLeg extends Model
         'position',
         'from_location',
         'to_location',
+        'to_latitude',
+        'to_longitude',
         'distance_km',
         'weight_kg',
         'emission_factor',
         'co2_kg',
+        'from_recommendation',
     ];
 
     protected function casts(): array
@@ -26,6 +29,9 @@ class ShipmentLeg extends Model
             'weight_kg' => 'decimal:2',
             'emission_factor' => 'decimal:5',
             'co2_kg' => 'decimal:3',
+            'to_latitude' => 'float',
+            'to_longitude' => 'float',
+            'from_recommendation' => 'boolean',
         ];
     }
 

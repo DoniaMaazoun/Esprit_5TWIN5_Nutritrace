@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ShipmentController as AdminShipmentController;
 use App\Http\Controllers\Admin\TransportModeController;
+use App\Http\Controllers\Distributor\CarbonDashboardController;
 use App\Http\Controllers\Distributor\PointOfSaleController;
 use App\Http\Controllers\Distributor\ShipmentController;
 use App\Http\Controllers\Distributor\ShipmentEventController;
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 
 // ==================== ESPACE DISTRIBUTEUR ====================
 Route::prefix('pro/distributor')->name('pro.distributor.')->middleware(['auth', DistributorMiddleware::class])->group(function () {
+    // Dashboard carbone
+    Route::get('dashboard', CarbonDashboardController::class)->name('dashboard');
+
     // Points de vente
     Route::resource('points-of-sale', PointOfSaleController::class)
         ->parameters(['points-of-sale' => 'pointOfSale']);

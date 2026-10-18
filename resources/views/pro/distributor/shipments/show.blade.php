@@ -4,6 +4,7 @@
 
 @section('extra-css')
   @include('pro.distributor.partials.styles')
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 @endsection
 
 @section('content')
@@ -59,6 +60,8 @@
       </dl>
     </div>
   </div>
+
+  @include('pro.distributor.shipments._map')
 
   <!-- Étapes de transport -->
   <div class="card distributor-card mb-4">

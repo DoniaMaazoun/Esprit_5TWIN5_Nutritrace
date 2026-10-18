@@ -104,6 +104,82 @@ class Shipment extends Model
         ]);
     }
 
+    /** Couleur de chaque mode de transport sur la carte du trajet */
+    public const MODE_COLORS = [
+        'truck_heavy' => '#e76f51',
+        'truck_light' => '#f4a261',
+        'van' => '#c9a227',
+        'rail' => '#2d5a27',
+        'river' => '#2a9d8f',
+        'sea' => '#264653',
+        'air' => '#d62828',
+    ];
+
+    /**
+     * Données de la carte Leaflet : départ (ferme du lot), arrivée de chaque étape,
+     * destination (point de vente). Une étape sans coordonnées n'est pas tracée.
+     *
+     * @return array{markers: array, segments: array, missing: array<int, string>}
+     */
+    public function mapData(): array
+    {
+        $this->loadMissing(['harvest.farm', 'pointOfSale', 'legs.transportMode']);
+
+        $markers = [];
+        $segments = [];
+        $missing = [];
+
+        $farm = $this->harvest?->farm;
+        $previous = $farm?->hasLocation() ? [(float) $farm->latitude, (float) $farm->longitude] : null;
+        if ($previous) {
+            $markers[] = ['position' => $previous, 'type' => 'start', 'label' => "Départ : {$this->origin_address} ({$farm->name})"];
+        } elseif ($this->legs->isNotEmpty()) {
+            $missing[] = 'Départ : lot sans ferme géolocalisée';
+        }
+
+        $pos = $this->pointOfSale;
+        $posPoint = $pos && $pos->latitude !== null && $pos->longitude !== null
+            ? [(float) $pos->latitude, (float) $pos->longitude]
+            : null;
+
+        foreach ($this->legs as $index => $leg) {
+            $isLast = $index === $this->legs->count() - 1;
+            $end = $leg->to_latitude !== null && $leg->to_longitude !== null
+                ? [(float) $leg->to_latitude, (float) $leg->to_longitude]
+                : ($isLast ? $posPoint : null);
+
+            if (!$end) {
+                $missing[] = "Étape {$leg->position} : {$leg->to_location}";
+                $previous = null;
+
+                continue;
+            }
+
+            if ($previous) {
+                $segments[] = [
+                    'from' => $previous,
+                    'to' => $end,
+                    'color' => self::MODE_COLORS[$leg->transportMode->code] ?? '#6c757d',
+                    'label' => "Étape {$leg->position} · {$leg->transportMode->name} · "
+                        . number_format($leg->distance_km, 1, ',', ' ') . ' km · ' . number_format($leg->co2_kg, 2, ',', ' ') . ' kg CO2e',
+                ];
+            }
+            $markers[] = [
+                'position' => $end,
+                'type' => $isLast ? 'end' : 'step',
+                'label' => ($isLast ? 'Arrivée' : "Étape {$leg->position}") . " : {$leg->to_location}",
+            ];
+            $previous = $end;
+        }
+
+        // Destination connue mais pas encore reliée par une étape
+        if ($posPoint && !collect($markers)->contains(fn ($m) => $m['position'] === $posPoint)) {
+            $markers[] = ['position' => $posPoint, 'type' => 'end', 'label' => "Destination : {$pos->name}, {$pos->city}"];
+        }
+
+        return ['markers' => $markers, 'segments' => $segments, 'missing' => $missing];
+    }
+
     public function getStatusLabel(): string
     {
         return self::STATUSES[$this->status] ?? $this->status;

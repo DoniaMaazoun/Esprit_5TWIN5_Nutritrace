@@ -136,6 +136,19 @@
       if (distance && recommended.type === 'plan') {
         distance.value = recommended.legs[0].distance_km;
       }
+      // L'étape enregistrée comptera dans le « CO2 économisé grâce aux recommandations » du dashboard
+      const flag = form.querySelector('[name="from_recommendation"]');
+      if (flag) {
+        flag.value = 1;
+      }
+    });
+
+    // Si le distributeur choisit lui-même un autre mode, l'étape ne suit plus la recommandation
+    form.querySelector('[name="transport_mode_id"]')?.addEventListener('change', (event) => {
+      const flag = form.querySelector('[name="from_recommendation"]');
+      if (event.isTrusted && flag) {
+        flag.value = 0;
+      }
     });
   });
 </script>

@@ -23,6 +23,12 @@
           <i class="fa-solid fa-store"></i> Points de vente
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link @if(request()->routeIs('pro.distributor.dashboard')) active @endif"
+           href="{{ route('pro.distributor.dashboard') }}">
+          <i class="fa-solid fa-chart-pie"></i> Dashboard carbone
+        </a>
+      </li>
     </ul>
   </div>
 </div>
