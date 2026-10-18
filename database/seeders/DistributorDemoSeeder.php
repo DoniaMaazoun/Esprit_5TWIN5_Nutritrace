@@ -28,6 +28,8 @@ class DistributorDemoSeeder extends Seeder
             'type' => 'store',
             'address' => 'Rue du Lac Léman',
             'city' => 'Tunis',
+            'latitude' => 36.8437,
+            'longitude' => 10.2733,
         ]);
 
         PointOfSale::create([
@@ -36,6 +38,8 @@ class DistributorDemoSeeder extends Seeder
             'type' => 'warehouse',
             'address' => 'Zone industrielle Poudrière',
             'city' => 'Sfax',
+            'latitude' => 34.7406,
+            'longitude' => 10.7603,
         ]);
 
         // Lot d'olives déclaré par le producteur de démo (FarmSeeder, module 1)
@@ -59,6 +63,8 @@ class DistributorDemoSeeder extends Seeder
             'position' => 1,
             'from_location' => 'Gare de Sfax',
             'to_location' => 'Gare de Tunis',
+            'to_latitude' => 36.7948,
+            'to_longitude' => 10.1802,
             'distance_km' => 270,
             'weight_kg' => 1200,
         ])->calculateCo2()->save();
@@ -68,6 +74,8 @@ class DistributorDemoSeeder extends Seeder
             'position' => 2,
             'from_location' => 'Gare de Tunis',
             'to_location' => 'Épicerie Bio Lac 2',
+            'to_latitude' => 36.8437,
+            'to_longitude' => 10.2733,
             'distance_km' => 12,
             'weight_kg' => 1200,
         ])->calculateCo2()->save();

@@ -67,16 +67,24 @@ class ShipmentLegController extends Controller
 
     private function validateData(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'transport_mode_id' => [
                 'required',
                 Rule::exists('transport_modes', 'id')->where('is_active', true),
             ],
             'from_location' => ['required', 'string', 'max:255'],
             'to_location' => ['required', 'string', 'max:255'],
+            'to_latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:to_longitude'],
+            'to_longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:to_latitude'],
             'distance_km' => ['required', 'numeric', 'min:0.1'],
             'weight_kg' => ['required', 'numeric', 'min:0.01'],
+            'from_recommendation' => ['nullable', 'boolean'],
         ]);
+
+        // Étape créée en appliquant la recommandation IA : sert au calcul du CO2 économisé
+        $data['from_recommendation'] = $request->boolean('from_recommendation');
+
+        return $data;
     }
 
     private function authorizeOwner(Shipment $shipment): void

@@ -30,4 +30,19 @@
     <input type="text" id="to_location" name="to_location" class="form-control"
            value="{{ old('to_location', $leg->to_location) }}" required>
   </div>
+  <div class="col-md-3">
+    <label for="to_latitude" class="form-label">Latitude d'arrivée</label>
+    <input type="number" step="0.0000001" min="-90" max="90" id="to_latitude" name="to_latitude" class="form-control"
+           value="{{ old('to_latitude', $leg->to_latitude) }}" placeholder="ex. 36.8065">
+  </div>
+  <div class="col-md-3">
+    <label for="to_longitude" class="form-label">Longitude d'arrivée</label>
+    <input type="number" step="0.0000001" min="-180" max="180" id="to_longitude" name="to_longitude" class="form-control"
+           value="{{ old('to_longitude', $leg->to_longitude) }}" placeholder="ex. 10.1815">
+  </div>
+  <div class="col-12">
+    <p class="form-text mb-0">Coordonnées facultatives : elles placent l'étape sur la carte du trajet.</p>
+  </div>
+  <input type="hidden" name="from_recommendation" id="from_recommendation"
+         value="{{ old('from_recommendation', $leg->from_recommendation ? 1 : 0) }}">
 </div>

@@ -4,6 +4,7 @@
 
 @section('extra-css')
   @include('pro.distributor.partials.styles')
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 @endsection
 
 @section('content')
@@ -15,6 +16,9 @@
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
       <span><i class="fa-solid fa-route"></i> Expédition {{ $shipment->reference }} @include('pro.distributor.partials.status-badge')</span>
       <div class="d-flex gap-2">
+        <a href="{{ route('pro.distributor.shipments.pdf', $shipment) }}" class="btn btn-outline-success btn-sm">
+          <i class="fa-solid fa-file-pdf"></i> Télécharger le PDF
+        </a>
         <a href="{{ route('pro.distributor.shipments.edit', $shipment) }}" class="btn btn-outline-primary btn-sm">
           <i class="fa-solid fa-pen"></i> Modifier
         </a>
@@ -59,6 +63,8 @@
       </dl>
     </div>
   </div>
+
+  @include('pro.distributor.shipments._map')
 
   <!-- Étapes de transport -->
   <div class="card distributor-card mb-4">
@@ -113,6 +119,7 @@
       <h6 class="mt-4 mb-3">Ajouter une étape</h6>
       <form method="POST" action="{{ route('pro.distributor.shipments.legs.store', $shipment) }}">
         @csrf
+        @include('pro.distributor.shipments._recommendation')
         @include('pro.distributor.legs._form', ['leg' => new \App\Models\ShipmentLeg()])
         <p class="form-text mt-2 mb-0">CO2 (kg) = distance (km) × poids (tonnes) × facteur d'émission du mode de transport (ADEME).</p>
         <button type="submit" class="btn btn-success mt-3"><i class="fa-solid fa-plus"></i> Ajouter l'étape</button>

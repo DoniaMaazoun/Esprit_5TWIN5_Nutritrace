@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Admin\ShipmentController as AdminShipmentController;
 use App\Http\Controllers\Admin\TransportModeController;
+use App\Http\Controllers\Distributor\CarbonDashboardController;
 use App\Http\Controllers\Distributor\PointOfSaleController;
 use App\Http\Controllers\Distributor\ShipmentController;
 use App\Http\Controllers\Distributor\ShipmentEventController;
 use App\Http\Controllers\Distributor\ShipmentLegController;
+use App\Http\Controllers\Distributor\ShipmentPdfController;
+use App\Http\Controllers\Distributor\TransportRecommendationController;
 use App\Http\Middleware\DistributorMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 
 // ==================== ESPACE DISTRIBUTEUR ====================
 Route::prefix('pro/distributor')->name('pro.distributor.')->middleware(['auth', DistributorMiddleware::class])->group(function () {
+    // Dashboard carbone
+    Route::get('dashboard', CarbonDashboardController::class)->name('dashboard');
+
     // Points de vente
     Route::resource('points-of-sale', PointOfSaleController::class)
         ->parameters(['points-of-sale' => 'pointOfSale']);
@@ -32,6 +38,13 @@ Route::prefix('pro/distributor')->name('pro.distributor.')->middleware(['auth', 
         Route::resource('shipments.events', ShipmentEventController::class)
             ->only(['store', 'edit', 'update', 'destroy']);
     });
+
+    // Recommandation IA du mode de transport
+    Route::post('shipments/{shipment}/transport-recommendation', TransportRecommendationController::class)
+        ->name('shipments.transport-recommendation');
+
+    // Rapport de traçabilité PDF
+    Route::get('shipments/{shipment}/pdf', ShipmentPdfController::class)->name('shipments.pdf');
 });
 
 // ==================== BACKEND (ADMIN) ====================
