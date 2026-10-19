@@ -27,7 +27,7 @@ class ShipmentLegController extends Controller
         $shipment->recalculateTotals();
 
         return redirect()->route('pro.distributor.shipments.show', $shipment)
-            ->with('success', 'Étape ajoutée : ' . number_format($leg->co2_kg, 2, ',', ' ') . ' kg CO2e.');
+            ->with('success', 'Étape ajoutée : '.number_format($leg->co2_kg, 2, ',', ' ').' kg CO2e.');
     }
 
     public function edit(Shipment $shipment, ShipmentLeg $leg): View

@@ -85,7 +85,7 @@ class CarbonDashboard
         $reference = TransportMode::whereIn('code', self::REFERENCE_TRUCKS)->get()
             ->sortBy(fn ($m) => array_search($m->code, self::REFERENCE_TRUCKS))
             ->first();
-        if (!$reference) {
+        if (! $reference) {
             return null;
         }
 
@@ -131,7 +131,7 @@ class CarbonDashboard
         $labels = [];
         foreach ($months as $key => $co2) {
             [$year, $month] = explode('-', $key);
-            $labels[self::MONTHS[(int) $month] . ' ' . $year] = round($co2, 3);
+            $labels[self::MONTHS[(int) $month].' '.$year] = round($co2, 3);
         }
 
         return $labels;

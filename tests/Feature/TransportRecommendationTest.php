@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\TransportRecommender;
 use Database\Seeders\TransportModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -55,7 +56,7 @@ class TransportRecommendationTest extends TestCase
         if ($categorySlug) {
             $producer = User::factory()->create(['role' => 'pro', 'pro_type' => 'producer', 'status' => 'approved']);
             $farm = Farm::forceCreate([
-                'user_id' => $producer->id, 'name' => 'Ferme ' . uniqid(), 'governorate' => 'Nabeul', 'city' => 'Menzel Temime',
+                'user_id' => $producer->id, 'name' => 'Ferme '.uniqid(), 'governorate' => 'Nabeul', 'city' => 'Menzel Temime',
                 'total_area' => 10, 'farming_type' => 'organic', 'irrigation_type' => 'drip',
             ]);
             $harvestId = Harvest::create([
@@ -186,7 +187,7 @@ class TransportRecommendationTest extends TestCase
         config(['services.ai.key' => 'test-key']);
         Http::fake(['ai.test/*' => Http::response($this->aiMessage(
             "```json\n{\"choice\": \"plan_rail\", \"explanation\": \"L'huile se conserve : le train réduit fortement le CO2.\", "
-            . "\"tips\": [\"Planifiez l'expédition 2 jours à l'avance.\", \"\"]}\n```"
+            ."\"tips\": [\"Planifiez l'expédition 2 jours à l'avance.\", \"\"]}\n```"
         ))]);
         $shipment = $this->shipment("Huile d'olive", 'olives');
 
@@ -228,7 +229,7 @@ class TransportRecommendationTest extends TestCase
             ->push($this->aiMessage('{"choice": "plan_rail", "explanation": "Les olives se conservent", "tips": ['))
             // Clé entre crochets (format renvoyé par certains modèles) et conseil au chiffre inventé
             ->push($this->aiMessage('{"choice": "[plan_rail]", "explanation": "Le train est le moins émetteur.", '
-                . '"tips": ["Le plan rail émet 24,68 kg au lieu de 200 kg.", "Vous économiserez 0,012 kg par kg transporté."]}'))]);
+                .'"tips": ["Le plan rail émet 24,68 kg au lieu de 200 kg.", "Vous économiserez 0,012 kg par kg transporté."]}'))]);
 
         $result = $this->recommender()->recommend(500, 2000, null, $this->shipment("Huile d'olive", 'olives'));
 
@@ -245,7 +246,7 @@ class TransportRecommendationTest extends TestCase
         $calls = 0;
         Http::fake(['ai.test/*' => function () use (&$calls) {
             $calls++;
-            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Resolving timed out');
+            throw new ConnectionException('cURL error 28: Resolving timed out');
         }]);
 
         $result = $this->recommender()->recommend(500, 2000);

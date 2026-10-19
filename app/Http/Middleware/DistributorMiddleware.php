@@ -16,11 +16,11 @@ class DistributorMiddleware
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        if (!$user->isApproved() || !$user->isDistributor()) {
+        if (! $user->isApproved() || ! $user->isDistributor()) {
             return redirect()->route('pro.dashboard')->with('error', 'Accès réservé aux distributeurs approuvés.');
         }
 

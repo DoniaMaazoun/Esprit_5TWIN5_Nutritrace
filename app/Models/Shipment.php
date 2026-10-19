@@ -148,7 +148,7 @@ class Shipment extends Model
                 ? [(float) $leg->to_latitude, (float) $leg->to_longitude]
                 : ($isLast ? $posPoint : null);
 
-            if (!$end) {
+            if (! $end) {
                 $missing[] = "Étape {$leg->position} : {$leg->to_location}";
                 $previous = null;
 
@@ -161,19 +161,19 @@ class Shipment extends Model
                     'to' => $end,
                     'color' => self::MODE_COLORS[$leg->transportMode->code] ?? '#6c757d',
                     'label' => "Étape {$leg->position} · {$leg->transportMode->name} · "
-                        . number_format($leg->distance_km, 1, ',', ' ') . ' km · ' . number_format($leg->co2_kg, 2, ',', ' ') . ' kg CO2e',
+                        .number_format($leg->distance_km, 1, ',', ' ').' km · '.number_format($leg->co2_kg, 2, ',', ' ').' kg CO2e',
                 ];
             }
             $markers[] = [
                 'position' => $end,
                 'type' => $isLast ? 'end' : 'step',
-                'label' => ($isLast ? 'Arrivée' : "Étape {$leg->position}") . " : {$leg->to_location}",
+                'label' => ($isLast ? 'Arrivée' : "Étape {$leg->position}")." : {$leg->to_location}",
             ];
             $previous = $end;
         }
 
         // Destination connue mais pas encore reliée par une étape
-        if ($posPoint && !collect($markers)->contains(fn ($m) => $m['position'] === $posPoint)) {
+        if ($posPoint && ! collect($markers)->contains(fn ($m) => $m['position'] === $posPoint)) {
             $markers[] = ['position' => $posPoint, 'type' => 'end', 'label' => "Destination : {$pos->name}, {$pos->city}"];
         }
 

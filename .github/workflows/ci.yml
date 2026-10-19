@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests & style (PHP 8.3)
+    runs-on: ubuntu-latest
+
+    env:
+      # Aucune clé IA en CI : les services IA passent en mode hors-ligne
+      AI_API_KEY: ''
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, sqlite3, mbstring, dom, gd, zip, fileinfo
+          coverage: none
+          tools: composer:v2
+
+      - name: Trouver le dossier de cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Mettre en cache les paquets Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Installer les dépendances (composer install)
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Préparer le fichier .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Créer la base SQLite de test
+        run: touch database/database.sqlite
+
+      - name: Lancer les migrations
+        run: php artisan migrate --force
+
+      - name: Lancer les tests
+        run: php artisan test
+
+      - name: Vérifier le style du code (Laravel Pint)
+        # Avertissement seulement : l'étape s'affiche en échec mais ne bloque pas la CI
+        continue-on-error: true
+        run: vendor/bin/pint --test
