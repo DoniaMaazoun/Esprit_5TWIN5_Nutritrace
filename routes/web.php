@@ -49,6 +49,21 @@ Route::name('frontend.')->group(function () {
 Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Pro\ProDashboardController::class, 'index'])->name('dashboard');
 
+    // Module 3 (Transformateur/Processor) : Réception des Matières Brutes
+    Route::middleware('processor')->group(function () {
+        Route::prefix('processor/raw-materials')->name('processor.raw-materials.')->controller(App\Http\Controllers\Pro\ProcessorRawMaterialController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create/{harvest}', 'create')->name('create');
+            Route::post('/store/{harvest}', 'store')->name('store');
+            Route::get('/{reception}', 'show')->name('show');
+            Route::get('/{reception}/edit', 'edit')->name('edit');
+            Route::put('/{reception}', 'update')->name('update');
+            Route::post('/{reception}/approve', 'approve')->name('approve');
+            Route::post('/{reception}/reject', 'reject')->name('reject');
+            Route::delete('/{reception}', 'destroy')->name('destroy');
+        });
+    });
+
     // Module 1 (Producteur) : Gestion des Exploitations & Origine des Récoltes
     Route::middleware('producer')->group(function () {
         Route::get('/farms/export', [FarmController::class, 'export'])->name('farms.export');
