@@ -245,7 +245,7 @@
         <h3>📦 Lot de Récolte</h3>
         <div class="preview-row">
           <span class="preview-label">Produit :</span>
-          <span class="preview-value">{{ $harvest->name }}</span>
+          <span class="preview-value">{{ $harvest->product_name }}</span>
         </div>
         <div class="preview-row">
           <span class="preview-label">Catégorie :</span>
@@ -265,7 +265,7 @@
         </div>
         <div class="preview-row">
           <span class="preview-label">Quantité Produite :</span>
-          <span class="preview-value">{{ $harvest->quantity_kg ?? 0 }} kg</span>
+          <span class="preview-value">{{ $harvest->quantityInKg() }} kg</span>
         </div>
       </div>
 
@@ -282,7 +282,7 @@
             name="quantity_received" 
             step="0.01" 
             min="0.01"
-            max="{{ $harvest->quantity_kg ?? 9999 }}"
+            max="{{ $harvest->quantityInKg() }}"
             value="{{ old('quantity_received') }}"
             placeholder="Ex: 450.50"
             required

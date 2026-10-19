@@ -268,7 +268,7 @@
           <h3>📦 Lot de Récolte</h3>
           <div class="preview-row">
             <span class="preview-label">Produit :</span>
-            <span class="preview-value">{{ $reception->harvest->name }}</span>
+            <span class="preview-value">{{ $reception->harvest->product_name }}</span>
           </div>
           <div class="preview-row">
             <span class="preview-label">Producteur :</span>
