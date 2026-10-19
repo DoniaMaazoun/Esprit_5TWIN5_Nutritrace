@@ -295,7 +295,7 @@
           @foreach($availableHarvests as $harvest)
             <div class="harvest-card">
               <div class="harvest-info">
-                <h3>{{ $harvest->name }}</h3>
+                <h3>{{ $harvest->product_name }}</h3>
                 <div class="harvest-meta">
                   <span>
                     <i class="fa-solid fa-farm"></i>
@@ -311,7 +311,7 @@
                   </span>
                   <span>
                     <i class="fa-solid fa-weight"></i>
-                    {{ $harvest->quantity_kg ?? 0 }} kg
+                    {{ $harvest->quantityInKg() }} kg
                   </span>
                   <span>
                     <i class="fa-solid fa-tag"></i>
@@ -354,7 +354,7 @@
               @foreach($receptions as $reception)
                 <tr>
                   <td>
-                    <strong>{{ $reception->harvest->name }}</strong><br>
+                    <strong>{{ $reception->harvest->product_name }}</strong><br>
                     <small style="color: #666;">{{ $reception->harvest->category->name ?? 'N/A' }}</small>
                   </td>
                   <td>{{ $reception->harvest->farm->user->name }}</td>

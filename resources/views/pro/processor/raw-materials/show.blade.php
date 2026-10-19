@@ -323,7 +323,7 @@
     <div class="detail-card">
       <div class="detail-header">
         <div>
-          <h1><i class="fa-solid fa-inbox"></i> {{ $reception->harvest->name }}</h1>
+          <h1><i class="fa-solid fa-inbox"></i> {{ $reception->harvest->product_name }}</h1>
           <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Réception #{{ $reception->id }}</p>
         </div>
         <div class="status-large status-{{ $reception->status }}-lg">
@@ -356,7 +356,7 @@
           </div>
           <div class="info-block">
             <div class="info-label">Quantité Produite</div>
-            <div class="info-value">{{ $reception->harvest->quantity_kg ?? 0 }} kg</div>
+            <div class="info-value">{{ $reception->harvest->quantityInKg() }} kg</div>
           </div>
         </div>
       </div>

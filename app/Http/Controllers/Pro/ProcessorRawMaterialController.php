@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Pro;
 use App\Http\Controllers\Controller;
 use App\Models\Harvest;
 use App\Models\RawMaterialReception;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class ProcessorRawMaterialController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Show list of available harvests for reception
      */
@@ -18,8 +20,11 @@ class ProcessorRawMaterialController extends Controller
     {
         $user = auth()->user();
 
-        // Get all validated harvests that haven't been received yet
-        $availableHarvests = Harvest::where('status', 'validated')
+        // Get all available harvests (status: in_stock) that haven't been received yet
+        // We show harvests that are either:
+        // - Never received (no reception record exists)
+        // - Or received but can still be re-registered as new reception
+        $availableHarvests = Harvest::where('status', 'in_stock')
             ->with('farm.user', 'category')
             ->get();
 
