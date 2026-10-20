@@ -41,6 +41,7 @@ class TransportRecommender
 
     /** Pré- et post-acheminement routier des plans multimodaux (km, plafonnés à 10 % du trajet) */
     private const FIRST_MILE_KM = 30;
+
     private const LAST_MILE_KM = 20;
 
     /** Camion de référence pour calculer le gain, par ordre de préférence */
@@ -72,9 +73,7 @@ class TransportRecommender
             'lait', 'fromage', 'poisson', 'viande', 'oeuf', 'fruit', 'legume'],
     ];
 
-    public function __construct(private AiAssistant $ai)
-    {
-    }
+    public function __construct(private AiAssistant $ai) {}
 
     /**
      * @return array|null null si aucun mode de transport actif ne permet de livrer
@@ -136,11 +135,11 @@ class TransportRecommender
      */
     public function classifyProduct(?string $name, ?string $categorySlug = null): string
     {
-        $normalized = ' ' . Str::lower(Str::ascii((string) $name)) . ' ';
+        $normalized = ' '.Str::lower(Str::ascii((string) $name)).' ';
 
         foreach (self::PRODUCT_KEYWORDS as $class => $keywords) {
             foreach ($keywords as $keyword) {
-                if (preg_match('/\b' . preg_quote($keyword, '/') . 's?\b/', $normalized)) {
+                if (preg_match('/\b'.preg_quote($keyword, '/').'s?\b/', $normalized)) {
                     return $class;
                 }
             }
@@ -206,7 +205,7 @@ class TransportRecommender
 
         foreach ($modes as $mode) {
             if ($this->profile($mode)['door_to_door']) {
-                $options->push($this->option('mode_' . $mode->code, $mode->name, [$this->leg($mode, $distanceKm, $weightKg)], $maxHours));
+                $options->push($this->option('mode_'.$mode->code, $mode->name, [$this->leg($mode, $distanceKm, $weightKg)], $maxHours));
             }
         }
 
@@ -214,7 +213,7 @@ class TransportRecommender
             $main = $modes->get($code);
             $first = $this->roadMode($modes, $weightKg, false);
             $last = $this->roadMode($modes, $weightKg, true);
-            if (!$main || !$first || !$last || $distanceKm < $minKm) {
+            if (! $main || ! $first || ! $last || $distanceKm < $minKm) {
                 continue;
             }
 
@@ -226,7 +225,7 @@ class TransportRecommender
                 $this->leg($last, $lastKm, $weightKg),
             ];
             $name = collect($legs)->pluck('name')->map(fn ($n) => Str::before($n, ' ('))->implode(' → ');
-            $options->push($this->option('plan_' . $code, $name, $legs, $maxHours));
+            $options->push($this->option('plan_'.$code, $name, $legs, $maxHours));
         }
 
         return $options->sortBy('co2_kg')->values();
@@ -296,7 +295,7 @@ class TransportRecommender
     private function reference(Collection $options): ?array
     {
         foreach (self::REFERENCE_TRUCKS as $code) {
-            if ($option = $options->firstWhere('key', 'mode_' . $code)) {
+            if ($option = $options->firstWhere('key', 'mode_'.$code)) {
                 return $option;
             }
         }
@@ -314,21 +313,21 @@ class TransportRecommender
     private function localTips(Collection $options, array $product, array $limit, ?float $maxHours, float $weightKg, ?Shipment $shipment): array
     {
         $tips = [];
-        $kg = fn (float $v) => number_format($v, 1, ',', ' ') . ' kg CO2e';
+        $kg = fn (float $v) => number_format($v, 1, ',', ' ').' kg CO2e';
         $best = $options->where('feasible', true)->sortBy('co2_kg')->first();
         $greener = $options->where('fits_capacity', true)->sortBy('co2_kg')->first();
 
         // Un délai plus souple permettrait une option moins émettrice
-        if ($limit['by'] === 'user' && $greener && !$greener['fits_delay'] && (!$best || $greener['co2_kg'] < $best['co2_kg'])) {
+        if ($limit['by'] === 'user' && $greener && ! $greener['fits_delay'] && (! $best || $greener['co2_kg'] < $best['co2_kg'])) {
             $neededHours = (int) ceil($greener['hours']);
             $gain = ($best['co2_kg'] ?? 0) - $greener['co2_kg'];
             $tips[] = "Avec un délai de {$neededHours} h au lieu de {$this->hours($maxHours)} h, l'option {$greener['name']} serait possible"
-                . ($best ? " et économiserait {$kg($gain)} (" . round($gain / max($best['co2_kg'], 0.001) * 100) . ' %).' : '.');
+                .($best ? " et économiserait {$kg($gain)} (".round($gain / max($best['co2_kg'], 0.001) * 100).' %).' : '.');
         }
 
         if ($product['refrigerated']) {
-            $tips[] = 'Produit périssable' . ($product['age_days'] !== null ? " récolté il y a {$product['age_days']} jour(s)" : '')
-                . " : prévoyez un camion frigorifique (2 à 8 °C) et une livraison sous {$this->hours($limit['hours'])} h.";
+            $tips[] = 'Produit périssable'.($product['age_days'] !== null ? " récolté il y a {$product['age_days']} jour(s)" : '')
+                ." : prévoyez un camion frigorifique (2 à 8 °C) et une livraison sous {$this->hours($limit['hours'])} h.";
         } elseif ($limit['by'] === 'product' && $product['max_hours'] !== null) {
             $tips[] = "{$product['name']} se conserve quelques semaines : une livraison sous {$this->hours($product['max_hours'])} h suffit, inutile de payer l'express.";
         }
@@ -341,7 +340,7 @@ class TransportRecommender
                 ->where('point_of_sale_id', $shipment->point_of_sale_id)
                 ->pluck('reference');
             if ($siblings->isNotEmpty()) {
-                $tips[] = 'Regroupez avec ' . $siblings->implode(', ') . " vers {$shipment->pointOfSale->name} : un seul trajet au lieu de " . ($siblings->count() + 1) . '.';
+                $tips[] = 'Regroupez avec '.$siblings->implode(', ')." vers {$shipment->pointOfSale->name} : un seul trajet au lieu de ".($siblings->count() + 1).'.';
             }
         }
 
@@ -350,7 +349,7 @@ class TransportRecommender
         if ($weightKg < 1000 && $van && $heavy && $heavy['legs'][0]['emission_factor'] > 0) {
             $ratio = round($van['legs'][0]['emission_factor'] / $heavy['legs'][0]['emission_factor']);
             $tips[] = "Chargement léger ({$this->hours($weightKg)} kg) : par tonne transportée, un utilitaire émet {$ratio} fois plus qu'un poids lourd. "
-                . 'Regrouper plusieurs lots vers la même ville réduit fortement le CO2 par tonne.';
+                .'Regrouper plusieurs lots vers la même ville réduit fortement le CO2 par tonne.';
         }
 
         return $tips;
@@ -371,7 +370,7 @@ class TransportRecommender
      */
     private function askAi(float $distanceKm, float $weightKg, ?float $maxHours, array $product, array $limit, Collection $options, ?array $reference, array $tips): ?array
     {
-        if (!$this->ai->isEnabled()) {
+        if (! $this->ai->isEnabled()) {
             return null;
         }
 
@@ -382,31 +381,31 @@ class TransportRecommender
             $o['co2_kg'],
             $o['hours'],
             $o['type'] === 'plan'
-                ? ' (étapes : ' . collect($o['legs'])->map(fn ($l) => "{$l['name']} {$l['distance_km']} km")->implode(', ') . ')'
+                ? ' (étapes : '.collect($o['legs'])->map(fn ($l) => "{$l['name']} {$l['distance_km']} km")->implode(', ').')'
                 : '',
-            $o['feasible'] ? '' : ' [IMPOSSIBLE : ' . (!$o['fits_capacity'] ? 'capacité dépassée' : 'délai dépassé') . ']'
+            $o['feasible'] ? '' : ' [IMPOSSIBLE : '.(! $o['fits_capacity'] ? 'capacité dépassée' : 'délai dépassé').']'
         ))->implode("\n");
 
-        $productFacts = 'Produit : ' . ($product['name'] ?: 'non précisé')
-            . ($product['category'] ? " (catégorie {$product['category']})" : '')
-            . ", nature : {$product['label']}"
-            . ($product['age_days'] !== null ? ", récolté il y a {$product['age_days']} jour(s)" : '')
-            . ($product['refrigerated'] ? ', transport réfrigéré nécessaire' : '') . '.';
+        $productFacts = 'Produit : '.($product['name'] ?: 'non précisé')
+            .($product['category'] ? " (catégorie {$product['category']})" : '')
+            .", nature : {$product['label']}"
+            .($product['age_days'] !== null ? ", récolté il y a {$product['age_days']} jour(s)" : '')
+            .($product['refrigerated'] ? ', transport réfrigéré nécessaire' : '').'.';
 
         $system = 'Tu es expert en logistique alimentaire bas carbone pour une plateforme tunisienne de traçabilité. '
-            . 'Choisis la meilleure option parmi celles qui ne sont pas marquées IMPOSSIBLE. Pour un produit périssable, '
-            . 'privilégie la rapidité et la chaîne du froid ; pour un produit qui se conserve, privilégie le CO2 le plus bas, '
-            . 'y compris un plan multimodal. Reste réaliste (desserte ferroviaire ou portuaire). '
-            . 'N\'invente aucun chiffre : utilise seulement ceux fournis. '
-            . 'Réponds uniquement en JSON : {"choice": "<clé de l\'option, sans crochets, ex. plan_rail>", '
-            . '"explanation": "<2 à 3 phrases en français>", "tips": ["<1 ou 2 conseils concrets>"]}.';
+            .'Choisis la meilleure option parmi celles qui ne sont pas marquées IMPOSSIBLE. Pour un produit périssable, '
+            .'privilégie la rapidité et la chaîne du froid ; pour un produit qui se conserve, privilégie le CO2 le plus bas, '
+            .'y compris un plan multimodal. Reste réaliste (desserte ferroviaire ou portuaire). '
+            .'N\'invente aucun chiffre : utilise seulement ceux fournis. '
+            .'Réponds uniquement en JSON : {"choice": "<clé de l\'option, sans crochets, ex. plan_rail>", '
+            .'"explanation": "<2 à 3 phrases en français>", "tips": ["<1 ou 2 conseils concrets>"]}.';
         $facts = "Expédition : {$distanceKm} km, {$weightKg} kg"
-            . ($maxHours ? ", délai souhaité par le distributeur {$maxHours} h" : ', pas de délai imposé par le distributeur')
-            . ($limit['by'] === 'product' ? ", délai maximal retenu pour le produit {$limit['hours']} h" : '') . ".\n"
-            . $productFacts . "\n"
-            . ($reference ? "Camion de référence : {$reference['name']} ({$reference['co2_kg']} kg CO2e).\n" : '')
-            . "Options calculées (facteurs ADEME) :\n{$table}\n"
-            . ($tips ? "Pistes calculées :\n- " . implode("\n- ", $tips) : '');
+            .($maxHours ? ", délai souhaité par le distributeur {$maxHours} h" : ', pas de délai imposé par le distributeur')
+            .($limit['by'] === 'product' ? ", délai maximal retenu pour le produit {$limit['hours']} h" : '').".\n"
+            .$productFacts."\n"
+            .($reference ? "Camion de référence : {$reference['name']} ({$reference['co2_kg']} kg CO2e).\n" : '')
+            ."Options calculées (facteurs ADEME) :\n{$table}\n"
+            .($tips ? "Pistes calculées :\n- ".implode("\n- ", $tips) : '');
 
         $this->warmUpDns();
 
@@ -415,7 +414,7 @@ class TransportRecommender
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             // Marge de tokens : les modèles « à raisonnement » (gpt-oss…) les consomment avant de répondre
             $answer = $this->ai->ask($system, $facts, 1500);
-            if (!$answer) {
+            if (! $answer) {
                 return null;
             }
             if ($choice = $this->parseAiAnswer($answer, $options, $facts)) {
@@ -432,18 +431,18 @@ class TransportRecommender
     private function parseAiAnswer(string $answer, Collection $options, string $facts): ?array
     {
         // Le modèle peut entourer le JSON de texte ou de balises ```json
-        if (!preg_match('/\{.*\}/s', $answer, $match)) {
+        if (! preg_match('/\{.*\}/s', $answer, $match)) {
             return null;
         }
         $data = json_decode($match[0], true);
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return null;
         }
 
         // Tolère « [plan_rail] » ou des guillemets autour de la clé
         $key = trim((string) ($data['choice'] ?? ''), " \t\n[]\"'`");
         $explanation = trim((string) ($data['explanation'] ?? ''));
-        if ($explanation === '' || !$options->contains(fn ($o) => $o['key'] === $key && $o['feasible'])) {
+        if ($explanation === '' || ! $options->contains(fn ($o) => $o['key'] === $key && $o['feasible'])) {
             return null;
         }
 
@@ -482,7 +481,7 @@ class TransportRecommender
     private function warmUpDns(): void
     {
         $host = parse_url((string) config('services.ai.base_url'), PHP_URL_HOST);
-        if ($host && !app()->runningUnitTests()) {
+        if ($host && ! app()->runningUnitTests()) {
             gethostbyname($host);
         }
     }
@@ -491,12 +490,12 @@ class TransportRecommender
 
     private function localExplanation(array $option, ?array $reference, array $product, array $limit, bool $hasFeasible): string
     {
-        $co2 = fn (float $kg) => number_format($kg, 2, ',', ' ') . ' kg CO2e';
+        $co2 = fn (float $kg) => number_format($kg, 2, ',', ' ').' kg CO2e';
 
-        if (!$hasFeasible) {
+        if (! $hasFeasible) {
             return "Aucune option ne respecte le délai de {$this->hours($limit['hours'])} h avec ce chargement. La plus rapide est {$option['name']} "
-                . "(environ {$option['hours']} h, {$co2($option['co2_kg'])})"
-                . ($limit['by'] === 'product' ? ' : le produit étant périssable, la rapidité passe avant le CO2.' : ' : élargissez le délai pour réduire l\'empreinte.');
+                ."(environ {$option['hours']} h, {$co2($option['co2_kg'])})"
+                .($limit['by'] === 'product' ? ' : le produit étant périssable, la rapidité passe avant le CO2.' : ' : élargissez le délai pour réduire l\'empreinte.');
         }
 
         $text = match ($product['class']) {
@@ -512,7 +511,7 @@ class TransportRecommender
         if ($reference && $reference['key'] !== $option['key'] && $reference['co2_kg'] > 0) {
             $percent = round(($reference['co2_kg'] - $option['co2_kg']) / $reference['co2_kg'] * 100);
             $text .= " Par rapport au {$reference['name']} ({$co2($reference['co2_kg'])}), "
-                . ($percent >= 0 ? "vous économisez {$percent} %." : 'il émet ' . abs($percent) . ' % de plus.');
+                .($percent >= 0 ? "vous économisez {$percent} %." : 'il émet '.abs($percent).' % de plus.');
         }
         if ($option['type'] === 'plan') {
             $text .= ' Sous réserve d\'une gare ou d\'un port proches du départ et de l\'arrivée.';

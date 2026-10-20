@@ -111,7 +111,7 @@ class ShipmentController extends Controller
         ]);
 
         // Sans nom saisi, on reprend celui du lot choisi
-        if (empty($data['product_name']) && !empty($data['harvest_id'])) {
+        if (empty($data['product_name']) && ! empty($data['harvest_id'])) {
             $data['product_name'] = Harvest::whereKey($data['harvest_id'])->value('product_name');
         }
 

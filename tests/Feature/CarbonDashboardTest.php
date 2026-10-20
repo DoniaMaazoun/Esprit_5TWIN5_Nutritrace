@@ -67,7 +67,7 @@ class CarbonDashboardTest extends TestCase
                 'transport_mode_id' => TransportMode::where('code', $leg[0])->value('id'),
                 'position' => $position + 1,
                 'from_location' => 'A',
-                'to_location' => 'B' . ($position + 1),
+                'to_location' => 'B'.($position + 1),
                 'distance_km' => $leg[1],
                 'weight_kg' => $weightKg,
                 'from_recommendation' => $leg[2] ?? false,

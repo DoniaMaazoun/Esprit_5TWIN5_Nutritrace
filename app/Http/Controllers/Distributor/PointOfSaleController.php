@@ -27,7 +27,7 @@ class PointOfSaleController extends Controller
     public function create(): View
     {
         return view('pro.distributor.points-of-sale.create', [
-            'pointOfSale' => new PointOfSale(),
+            'pointOfSale' => new PointOfSale,
         ]);
     }
 

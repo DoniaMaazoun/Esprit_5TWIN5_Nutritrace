@@ -18,7 +18,7 @@ class DistributorDemoSeeder extends Seeder
     {
         $distributor = User::where('email', 'pro-approved@test.tn')->first();
 
-        if (!$distributor || $distributor->shipments()->exists()) {
+        if (! $distributor || $distributor->shipments()->exists()) {
             return;
         }
 
