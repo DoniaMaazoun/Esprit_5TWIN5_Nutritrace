@@ -1,180 +1,10 @@
-@extends('frontend.layouts.app')
+@extends('pro.layouts.processor')
 
 @section('title', 'Enregistrer une Réception - Transformateur | Farm to Fork')
 
-@section('extra-css')
+@section('processor-content')
+
 <style>
-  .form-section {
-    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f3 100%);
-    padding: 40px 0;
-    min-height: 100vh;
-  }
-
-  .form-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .form-header {
-    background: linear-gradient(135deg, #fd7e14 0%, #ff9a3d 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 1rem;
-    margin-bottom: 2rem;
-    text-align: center;
-  }
-
-  .form-header h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .harvest-preview {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    margin-bottom: 2rem;
-    border-left: 4px solid #fd7e14;
-  }
-
-  .harvest-preview h3 {
-    color: #1e3a2b;
-    margin-top: 0;
-  }
-
-  .preview-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
-  }
-
-  .preview-label {
-    font-weight: 600;
-    color: #666;
-  }
-
-  .preview-value {
-    color: #1e3a2b;
-  }
-
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group label {
-    display: block;
-    font-weight: 600;
-    color: #1e3a2b;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-  }
-
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #fd7e14;
-    box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.1);
-  }
-
-  .form-group textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-
-  .required::after {
-    content: ' *';
-    color: #dc3545;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid #e0e0e0;
-  }
-
-  .btn-submit {
-    flex: 1;
-    background: #fd7e14;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    transition: background 0.3s ease;
-  }
-
-  .btn-submit:hover {
-    background: #e67e0f;
-  }
-
-  .btn-cancel {
-    flex: 1;
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    text-decoration: none;
-    transition: background 0.3s ease;
-    text-align: center;
-  }
-
-  .btn-cancel:hover {
-    background: #5a6268;
-  }
-
-  .error-message {
-    background: #f8d7da;
-    color: #721c24;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .success-message {
-    background: #d4edda;
-    color: #155724;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .help-text {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 0.25rem;
-  }
-
   .quality-options {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -200,8 +30,8 @@
   }
 
   .quality-option input[type="radio"]:checked + .quality-label {
-    border-color: #fd7e14;
-    background: #fff3e0;
+    border-color: var(--processor-primary);
+    background: #f0f9f4;
   }
 
   .quality-label i {
@@ -213,25 +43,67 @@
   .quality-label span {
     display: block;
     font-weight: 600;
-    color: #1e3a2b;
+    color: var(--dark);
+  }
+
+  .harvest-preview {
+    background: #f0f9f4;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--processor-primary);
+  }
+
+  .harvest-preview h3 {
+    color: var(--dark);
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+
+  .preview-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .preview-label {
+    font-weight: 600;
+    color: var(--gray);
+  }
+
+  .preview-value {
+    color: var(--dark);
+    font-weight: 500;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .form-row { grid-template-columns: 1fr; }
+    .quality-options { grid-template-columns: 1fr; }
   }
 </style>
-@endsection
 
-@section('content')
+<div class="page-head">
+  <div>
+    <a href="{{ route('pro.processor.raw-materials.index') }}" class="small"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+    <h1><i class="fa-solid fa-inbox"></i> Enregistrer une Réception</h1>
+    <p>Enregistrez la réception d'un nouveau lot de matière brute</p>
+  </div>
+</div>
 
-<div class="form-section">
-  <div class="container">
-    <!-- Form Header -->
-    <div class="form-header">
-      <h1><i class="fa-solid fa-inbox"></i> Enregistrer une Réception</h1>
-    </div>
-
-    <div class="form-card">
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="p-card">
       <!-- Error Messages -->
       @if ($errors->any())
-        <div class="error-message">
-          <strong>Erreurs dans le formulaire :</strong>
+        <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+          <strong><i class="fa-solid fa-circle-xmark"></i> Erreurs dans le formulaire :</strong>
           <ul style="margin: 0.5rem 0 0 1.5rem;">
             @foreach ($errors->all() as $error)
               <li>{{ $error }}</li>
@@ -242,7 +114,7 @@
 
       <!-- Harvest Preview -->
       <div class="harvest-preview">
-        <h3>📦 Lot de Récolte</h3>
+        <h3><i class="fa-solid fa-cube"></i> Lot de Récolte</h3>
         <div class="preview-row">
           <span class="preview-label">Produit :</span>
           <span class="preview-value">{{ $harvest->product_name }}</span>
@@ -253,7 +125,7 @@
         </div>
         <div class="preview-row">
           <span class="preview-label">Producteur :</span>
-          <span class="preview-value">{{ $harvest->farm->user->name }}</span>
+          <span class="preview-value">{{ $harvest->farm->user->company_name }}</span>
         </div>
         <div class="preview-row">
           <span class="preview-label">Ferme :</span>
@@ -273,39 +145,44 @@
       <form method="POST" action="{{ route('pro.processor.raw-materials.store', $harvest) }}">
         @csrf
 
-        <!-- Quantity Received -->
-        <div class="form-group">
-          <label for="quantity_received" class="required">Quantité Reçue (kg)</label>
-          <input 
-            type="number" 
-            id="quantity_received" 
-            name="quantity_received" 
-            step="0.01" 
-            min="0.01"
-            max="{{ $harvest->quantityInKg() }}"
-            value="{{ old('quantity_received') }}"
-            placeholder="Ex: 450.50"
-            required
-          >
-          <div class="help-text">Quantité reçue à votre usine</div>
-        </div>
+        <h2 class="p-card__title" style="margin-top: 2rem; margin-bottom: 1rem;"><i class="fa-solid fa-file-import"></i> Détails Réception</h2>
 
-        <!-- Reception Date -->
-        <div class="form-group">
-          <label for="reception_date" class="required">Date de Réception</label>
-          <input 
-            type="date" 
-            id="reception_date" 
-            name="reception_date" 
-            value="{{ old('reception_date', now()->format('Y-m-d')) }}"
-            required
-          >
-          <div class="help-text">Date d'arrivée du lot à l'usine</div>
+        <!-- Quantity Received & Reception Date -->
+        <div class="form-row">
+          <div>
+            <label for="quantity_received" class="form-label required">Quantité Reçue (kg)</label>
+            <input 
+              type="number" 
+              id="quantity_received" 
+              name="quantity_received" 
+              step="0.01" 
+              min="0.01"
+              max="{{ $harvest->quantityInKg() }}"
+              value="{{ old('quantity_received') }}"
+              placeholder="Ex: 450.50"
+              class="form-control"
+              required
+            >
+            <small class="form-text text-muted">Quantité reçue à votre usine</small>
+          </div>
+
+          <div>
+            <label for="reception_date" class="form-label required">Date de Réception</label>
+            <input 
+              type="date" 
+              id="reception_date" 
+              name="reception_date" 
+              value="{{ old('reception_date', now()->format('Y-m-d')) }}"
+              class="form-control"
+              required
+            >
+            <small class="form-text text-muted">Date d'arrivée du lot à l'usine</small>
+          </div>
         </div>
 
         <!-- Quality Status -->
-        <div class="form-group">
-          <label class="required">État de Qualité</label>
+        <div style="margin-top: 1.5rem;">
+          <label class="form-label required">État de Qualité</label>
           <div class="quality-options">
             <div class="quality-option">
               <input 
@@ -316,7 +193,7 @@
                 {{ old('quality_status') === 'good' ? 'checked' : '' }}
               >
               <label for="quality_good" class="quality-label">
-                <i class="fa-solid fa-circle-check" style="color: #28a745;"></i>
+                <i class="fa-solid fa-circle-check" style="color: var(--processor-primary);"></i>
                 <span>Bon</span>
               </label>
             </div>
@@ -350,66 +227,100 @@
         </div>
 
         <!-- Quality Notes -->
-        <div class="form-group">
-          <label for="quality_notes">Notes Qualité</label>
+        <div style="margin-top: 1.5rem;">
+          <label for="quality_notes" class="form-label">Notes Qualité</label>
           <textarea 
             id="quality_notes" 
             name="quality_notes" 
             placeholder="Décrivez l'état du produit, dommages observés, etc."
+            class="form-control"
+            rows="3"
           >{{ old('quality_notes') }}</textarea>
-          <div class="help-text">Observations sur la qualité du lot reçu</div>
+          <small class="form-text text-muted">Observations sur la qualité du lot reçu</small>
         </div>
 
-        <!-- Storage Location -->
-        <div class="form-group">
-          <label for="storage_location">Localisation de Stockage</label>
-          <input 
-            type="text" 
-            id="storage_location" 
-            name="storage_location" 
-            placeholder="Ex: Entrepôt A - Étagère 3"
-            value="{{ old('storage_location') }}"
-          >
-          <div class="help-text">Où est stocké le produit dans votre usine</div>
-        </div>
+        <!-- Storage Location & Temperature -->
+        <div class="form-row" style="margin-top: 1.5rem;">
+          <div>
+            <label for="storage_location" class="form-label">Localisation de Stockage</label>
+            <input 
+              type="text" 
+              id="storage_location" 
+              name="storage_location" 
+              placeholder="Ex: Entrepôt A - Étagère 3"
+              value="{{ old('storage_location') }}"
+              class="form-control"
+            >
+            <small class="form-text text-muted">Où est stocké le produit dans votre usine</small>
+          </div>
 
-        <!-- Temperature -->
-        <div class="form-group">
-          <label for="temperature">Température de Stockage (°C)</label>
-          <input 
-            type="number" 
-            id="temperature" 
-            name="temperature" 
-            step="0.1"
-            min="-50"
-            max="50"
-            placeholder="Ex: 4"
-            value="{{ old('temperature') }}"
-          >
-          <div class="help-text">Température de stockage (ex: 4°C pour produits frais)</div>
+          <div>
+            <label for="temperature" class="form-label">Température de Stockage (°C)</label>
+            <input 
+              type="number" 
+              id="temperature" 
+              name="temperature" 
+              step="0.1"
+              min="-50"
+              max="50"
+              placeholder="Ex: 4"
+              value="{{ old('temperature') }}"
+              class="form-control"
+            >
+            <small class="form-text text-muted">Température de stockage (ex: 4°C)</small>
+          </div>
         </div>
 
         <!-- Internal Notes -->
-        <div class="form-group">
-          <label for="internal_notes">Notes Internes</label>
+        <div style="margin-top: 1.5rem;">
+          <label for="internal_notes" class="form-label">Notes Internes</label>
           <textarea 
             id="internal_notes" 
             name="internal_notes" 
             placeholder="Notes pour votre équipe..."
+            class="form-control"
+            rows="3"
           >{{ old('internal_notes') }}</textarea>
-          <div class="help-text">Notes internes (non visibles au producteur)</div>
+          <small class="form-text text-muted">Notes internes (non visibles au producteur)</small>
         </div>
 
         <!-- Actions -->
-        <div class="form-actions">
-          <button type="submit" class="btn-submit">
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--gray-light);">
+          <button type="submit" class="btn btn-success flex-grow-1">
             <i class="fa-solid fa-check"></i> Enregistrer la Réception
           </button>
-          <a href="{{ route('pro.processor.raw-materials.index') }}" class="btn-cancel">
+          <a href="{{ route('pro.processor.raw-materials.index') }}" class="btn btn-outline-secondary flex-grow-1">
             <i class="fa-solid fa-times"></i> Annuler
           </a>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="p-card" style="background: linear-gradient(135deg, var(--processor-primary-dark), var(--processor-primary)); color: #fff; text-align: center;">
+      <div style="padding: 20px;">
+        <i class="fa-solid fa-inbox" style="font-size: 3rem; opacity: .3; margin-bottom: 12px; display: block;"></i>
+        <h3 style="margin: 0 0 6px; font-size: 1.2rem; font-weight: 700;">{{ $harvest->product_name }}</h3>
+        <p style="margin: 0; opacity: .9; font-size: .92rem;">{{ $harvest->category->name ?? 'N/A' }}</p>
+        <hr style="border-color: rgba(255,255,255,.2); margin: 12px 0;">
+        <dl style="margin: 0; font-size: .85rem; text-align: left;">
+          <dt style="font-weight: 600; opacity: .8;">Producteur</dt>
+          <dd style="margin: 0 0 8px; font-weight: 500;">{{ $harvest->farm->user->company_name }}</dd>
+          <dt style="font-weight: 600; opacity: .8;">Quantité</dt>
+          <dd style="margin: 0; font-weight: 500;">{{ $harvest->quantityInKg() }} kg</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="p-card">
+      <h3 class="p-card__title"><i class="fa-solid fa-info-circle"></i> Aide</h3>
+      <ul style="margin: 0; padding-left: 1.5rem; color: var(--gray-dark); font-size: .9rem;">
+        <li style="margin-bottom: 8px;">Vérifiez la quantité reçue</li>
+        <li style="margin-bottom: 8px;">Évaluez l'état de qualité</li>
+        <li style="margin-bottom: 8px;">Notez le lieu de stockage</li>
+        <li>Conservez les conditions de température</li>
+      </ul>
     </div>
   </div>
 </div>
