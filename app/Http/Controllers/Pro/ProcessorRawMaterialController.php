@@ -20,19 +20,21 @@ class ProcessorRawMaterialController extends Controller
     {
         $user = auth()->user();
 
-        // Get all available harvests (status: in_stock) that haven't been received yet
-        // We show harvests that are either:
-        // - Never received (no reception record exists)
-        // - Or received but can still be re-registered as new reception
+        // Get all available harvests (status: in_stock) with pagination
         $availableHarvests = Harvest::where('status', 'in_stock')
             ->with('farm.user', 'category')
-            ->get();
+            ->paginate(4);
+
+        // Get already registered harvest IDs for this processor
+        $registeredHarvestIds = RawMaterialReception::where('processor_id', $user->id)
+            ->pluck('harvest_id')
+            ->toArray();
 
         // Get all receptions for this processor
         $receptions = RawMaterialReception::where('processor_id', $user->id)
             ->with('harvest.farm.user', 'harvest.category')
             ->orderBy('reception_date', 'desc')
-            ->paginate(10);
+            ->paginate(4);
 
         // Get summary stats
         $stats = [
@@ -52,6 +54,7 @@ class ProcessorRawMaterialController extends Controller
 
         return view('pro.processor.raw-materials.index', [
             'availableHarvests' => $availableHarvests,
+            'registeredHarvestIds' => $registeredHarvestIds,
             'receptions' => $receptions,
             'stats' => $stats,
         ]);
@@ -159,13 +162,19 @@ class ProcessorRawMaterialController extends Controller
      */
     public function approve(RawMaterialReception $reception): RedirectResponse
     {
-        $this->authorize('update', $reception);
+        try {
+            $this->authorize('update', $reception);
+            $reception->markAsReceived();
 
-        $reception->markAsReceived();
-
-        return redirect()
-            ->route('pro.processor.raw-materials.show', $reception)
-            ->with('success', 'Réception marquée comme reçue! ✅');
+            return redirect()
+                ->route('pro.processor.raw-materials.show', $reception)
+                ->with('success', 'Réception marquée comme reçue! ✅');
+        } catch (\Exception $e) {
+            \Log::error('Approve error: ' . $e->getMessage());
+            return redirect()
+                ->route('pro.processor.raw-materials.show', $reception)
+                ->with('error', 'Erreur: ' . $e->getMessage());
+        }
     }
 
     /**

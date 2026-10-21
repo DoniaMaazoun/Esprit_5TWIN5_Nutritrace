@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Pro;
 
 use App\Http\Controllers\Controller;
 use App\Models\Harvest;
+use App\Models\Recipe;
+use App\Models\RawMaterialReception;
 use App\Models\User;
 use App\Services\AiAssistant;
 use App\Services\ProductIntelligence;
@@ -35,6 +37,17 @@ class ProDashboardController extends Controller
         $proType = $user->pro_type;
         $companyName = $user->company_name;
         $taxId = $user->tax_id;
+
+        // Dashboard KPIs pour les transformateurs
+        $dashboardKpis = [];
+        if ($proType === 'processor') {
+            $dashboardKpis = [
+                'pending_harvests' => \App\Models\Harvest::where('status', 'in_stock')->count(),
+                'active_recipes' => \App\Models\Recipe::where('processor_id', $user->id)->where('is_active', true)->count(),
+                'total_receptions' => \App\Models\RawMaterialReception::where('processor_id', $user->id)->count(),
+                'total_recipes' => \App\Models\Recipe::where('processor_id', $user->id)->count(),
+            ];
+        }
 
         // Préparer les données selon le type de professionnel
         $dashboardData = match($proType) {
@@ -69,21 +82,21 @@ class ProDashboardController extends Controller
             'processor' => [
                 'title' => 'Tableau de Bord Transformateur',
                 'icon' => 'fa-industry',
-                'color' => '#fd7e14',
+                'color' => '#28a745',
                 'modules' => [
                     [
                         'title' => 'Réception de Lots',
                         'icon' => 'fa-inbox',
                         'description' => 'Recevez et enregistrez les lots provenant de producteurs. Vérifiez les quantités et certificats.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'route' => route('pro.processor.raw-materials.index'),
+                        'badge' => 'Actif'
                     ],
                     [
                         'title' => 'Transformations & Assemblages',
                         'icon' => 'fa-gears',
                         'description' => 'Enregistrez les processus de transformation. Tracez les ingrédients et ajouts. Créez de nouveaux lots.',
-                        'route' => '#',
-                        'badge' => 'À venir'
+                        'route' => route('pro.processor.recipes.index'),
+                        'badge' => 'Actif'
                     ],
                     [
                         'title' => 'Gestion des Emballages & Éco-Score',
@@ -136,6 +149,7 @@ class ProDashboardController extends Controller
             'taxId' => $taxId,
             'proType' => $proType,
             'dashboardData' => $dashboardData,
+            'dashboardKpis' => $dashboardKpis,
         ]);
     }
 

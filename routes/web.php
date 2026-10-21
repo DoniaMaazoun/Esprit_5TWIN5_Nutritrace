@@ -62,6 +62,22 @@ Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function 
             Route::post('/{reception}/reject', 'reject')->name('reject');
             Route::delete('/{reception}', 'destroy')->name('destroy');
         });
+
+        // Module 2 (Transformateur/Processor) : Gestion des Recettes & Ingrédients
+        Route::resource('processor/recipes', App\Http\Controllers\Pro\ProcessorRecipeController::class, [
+            'names' => [
+                'index' => 'processor.recipes.index',
+                'create' => 'processor.recipes.create',
+                'store' => 'processor.recipes.store',
+                'show' => 'processor.recipes.show',
+                'edit' => 'processor.recipes.edit',
+                'update' => 'processor.recipes.update',
+                'destroy' => 'processor.recipes.destroy',
+            ],
+            'parameters' => [
+                'recipe' => 'recipe',
+            ]
+        ]);
     });
 
     // Module 1 (Producteur) : Gestion des Exploitations & Origine des Récoltes

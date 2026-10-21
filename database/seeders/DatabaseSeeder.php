@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         // Module 2 (Transformateur) : producteur de test + ferme + récoltes validées
         $this->call(ProducerSeeder::class);
         $this->call(ProcessorSeeder::class);
+        $this->call(ProcessorRecipeSeeder::class);
 
         // Module 3 - Distributeur (après le module 1 : les expéditions sont liées aux récoltes)
         $this->call(TransportModeSeeder::class);
