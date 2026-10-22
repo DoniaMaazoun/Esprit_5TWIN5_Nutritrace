@@ -17,7 +17,14 @@ if [ -z "${APP_KEY}" ]; then
   exit 1
 fi
 
-# 3. Attente de la base de données puis migrations (jusqu'à ~2 minutes)
+# 3. Base MySQL externe en TLS (Aiven…) : certificat CA fourni en texte dans DB_SSL_CA_PEM
+if [ -n "${DB_SSL_CA_PEM}" ]; then
+  printf '%s\n' "${DB_SSL_CA_PEM}" > /var/www/html/storage/db-ca.pem
+  export MYSQL_ATTR_SSL_CA=/var/www/html/storage/db-ca.pem
+  echo "Connexion MySQL chiffrée (TLS) avec le certificat fourni."
+fi
+
+# 4. Attente de la base de données puis migrations (jusqu'à ~2 minutes)
 echo "Attente de la base de données ${DB_HOST:-?}:${DB_PORT:-3306}..."
 attempt=0
 until php artisan migrate --force --no-interaction; do
@@ -30,12 +37,12 @@ until php artisan migrate --force --no-interaction; do
   sleep 5
 done
 
-# 4. Données de démo (comptes de test, produits...) uniquement si la base est vide
+# 5. Données de démo (comptes de test, produits...) uniquement si la base est vide
 if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then
   php artisan app:seed-if-empty --no-interaction
 fi
 
-# 5. Lien public vers les photos des produits + caches de production
+# 6. Lien public vers les photos des produits + caches de production
 php artisan storage:link --force >/dev/null 2>&1 || true
 php artisan config:cache
 php artisan view:cache
