@@ -96,6 +96,20 @@
           @if($shipment->delivered_at) · livrée le {{ $shipment->delivered_at->format('d/m/Y H:i') }}@endif
         </dd>
       </dl>
+
+      <!-- Suivi : changement de statut -->
+      <form method="POST" action="{{ route('pro.distributor.shipments.status', $shipment) }}" class="d-flex flex-wrap align-items-center gap-2 border-top pt-3 mt-3">
+        @csrf
+        @method('PATCH')
+        <label for="status" class="form-label mb-0 fw-bold">Changer le statut</label>
+        <select id="status" name="status" class="form-select form-select-sm" style="max-width: 200px;">
+          @foreach(\App\Models\Shipment::STATUSES as $value => $label)
+            <option value="{{ $value }}" @selected($shipment->status === $value)>{{ $label }}</option>
+          @endforeach
+        </select>
+        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Mettre à jour</button>
+        <span class="form-text m-0">Les dates de départ et de livraison sont complétées automatiquement si elles manquent.</span>
+      </form>
     </div>
   </div>
 
@@ -103,7 +117,12 @@
 
   <!-- Étapes de transport -->
   <div class="card distributor-card mb-4">
-    <div class="card-header py-3"><i class="fa-solid fa-truck-fast"></i> Étapes de transport</div>
+    <div class="card-header d-flex justify-content-between align-items-center py-3">
+      <span><i class="fa-solid fa-truck-fast"></i> Étapes de transport</span>
+      <a href="{{ route('pro.distributor.shipments.edit', $shipment) }}" class="btn btn-outline-primary btn-sm">
+        <i class="fa-solid fa-pen"></i> Modifier les étapes
+      </a>
+    </div>
     <div class="card-body">
       @if($shipment->legs->count() > 0)
         <div class="table-responsive">
@@ -117,48 +136,34 @@
                 <th class="text-end">Poids (t)</th>
                 <th class="text-end">Facteur (kg/t.km)</th>
                 <th class="text-end">CO2 (kg)</th>
-                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               @foreach($shipment->legs as $leg)
                 <tr>
                   <td>{{ $leg->position }}</td>
-                  <td>{{ $leg->transportMode->name }}</td>
+                  <td>
+                    {{ $leg->transportMode->name }}
+                    @if($leg->from_recommendation)
+                      <span class="badge bg-success" title="Étape issue de la recommandation IA"><i class="fa-solid fa-wand-magic-sparkles"></i> IA</span>
+                    @endif
+                  </td>
                   <td>{{ $leg->from_location }} <i class="fa-solid fa-arrow-right text-muted"></i> {{ $leg->to_location }}</td>
                   <td class="text-end">{{ number_format($leg->distance_km, 1, ',', ' ') }}</td>
                   <td class="text-end">{{ number_format($leg->weight_kg / 1000, 3, ',', ' ') }}</td>
                   <td class="text-end">{{ number_format($leg->emission_factor, 4, ',', ' ') }}</td>
                   <td class="text-end"><span class="badge co2-badge">{{ number_format($leg->co2_kg, 2, ',', ' ') }}</span></td>
-                  <td class="text-end text-nowrap">
-                    <a href="{{ route('pro.distributor.shipments.legs.edit', [$shipment, $leg]) }}" class="btn btn-sm btn-outline-primary" title="Modifier">
-                      <i class="fa-solid fa-pen"></i>
-                    </a>
-                    <form method="POST" action="{{ route('pro.distributor.shipments.legs.destroy', [$shipment, $leg]) }}" class="d-inline">
-                      @csrf
-                      @method('DELETE')
-                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" onclick="return confirm('Supprimer cette étape ?');">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                    </form>
-                  </td>
                 </tr>
               @endforeach
             </tbody>
           </table>
         </div>
       @else
-        <div class="alert alert-info">Aucune étape : ajoutez le premier trajet ci-dessous.</div>
+        <div class="alert alert-info mb-0">
+          Aucune étape de transport.
+          <a href="{{ route('pro.distributor.shipments.edit', $shipment) }}">Modifier l'expédition</a> pour ajouter les trajets ou utiliser la recommandation IA.
+        </div>
       @endif
-
-      <h6 class="mt-4 mb-3">Ajouter une étape</h6>
-      <form method="POST" action="{{ route('pro.distributor.shipments.legs.store', $shipment) }}">
-        @csrf
-        @include('pro.distributor.shipments._recommendation')
-        @include('pro.distributor.legs._form', ['leg' => new \App\Models\ShipmentLeg()])
-        <p class="form-text mt-2 mb-0">CO2 (kg) = distance (km) × poids (tonnes) × facteur d'émission du mode de transport (ADEME).</p>
-        <button type="submit" class="btn btn-success mt-3"><i class="fa-solid fa-plus"></i> Ajouter l'étape</button>
-      </form>
     </div>
   </div>
 

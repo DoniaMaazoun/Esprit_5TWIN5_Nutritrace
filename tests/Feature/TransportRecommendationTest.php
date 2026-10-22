@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\Concerns\BuildsProductionChain;
 use Tests\TestCase;
 
@@ -318,29 +319,171 @@ class TransportRecommendationTest extends TestCase
 
         $this->assertSame('local', $result['source']);
         $this->assertSame('plan_rail', $result['recommended']['key']);
+        $this->assertSame('erreur du service IA', $result['fallback_reason']);
     }
 
-    public function test_recommendation_endpoint(): void
+    public function test_fallback_reason_is_returned_and_logged(): void
     {
-        // Sans lot de production lié, la nature est déduite du nom du produit
-        $shipment = $this->shipment('Fraises');
-        $url = route('pro.distributor.shipments.transport-recommendation', $shipment);
+        Log::spy();
 
-        $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.show', $shipment))
+        $result = $this->recommender()->recommend(500, 2000);
+        $this->assertSame('local', $result['source']);
+        $this->assertSame('pas de clé', $result['fallback_reason']);
+        $this->assertNull($result['provider']);
+
+        config(['services.ai.key' => 'test-key']);
+        Http::fake(['ai.test/*' => fn () => throw new ConnectionException('cURL error 28: Resolving timed out')]);
+        $this->assertSame('IA injoignable', $this->recommender()->recommend(500, 2000)['fallback_reason']);
+
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => str_contains($message, 'mode secours : IA injoignable')
+            && str_contains($context['detail'], 'Resolving timed out'))->once();
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message) => str_contains($message, 'mode secours : pas de clé'))->once();
+    }
+
+    public function test_invalid_answers_are_logged_with_the_model_text(): void
+    {
+        Log::spy();
+        config(['services.ai.key' => 'test-key']);
+        Http::fake(['ai.test/*' => Http::response($this->aiMessage('Je recommande le train.'))]);
+
+        $result = $this->recommender()->recommend(500, 2000);
+
+        $this->assertSame('réponse invalide', $result['fallback_reason']);
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => str_contains($message, 'réponse invalide')
+            && str_contains($context['detail'], 'JSON illisible') && str_contains($context['detail'], 'Je recommande le train.'))->once();
+        // La nouvelle tentative explique au modèle pourquoi sa réponse a été refusée
+        Http::assertSent(fn (Request $request) => count($request['messages']) === 4
+            && str_contains($request['messages'][3]['content'], 'JSON illisible'));
+    }
+
+    public function test_ai_answer_parsing_is_tolerant(): void
+    {
+        config(['services.ai.key' => 'test-key', 'services.ai.base_url' => 'https://api.groq.test/openai/v1']);
+        // Code du mode au lieu de la clé, guillemets typographiques et virgule finale
+        Http::fake(['api.groq.test/*' => Http::response($this->aiMessage(
+            'Voici ma réponse : {“choice”: “rail”, “explanation”: “Le train est le moins émetteur.”, “tips”: [“Le plan émet environ 25 kg.”],}'
+        ))]);
+
+        $result = $this->recommender()->recommend(500, 2000, null, $this->shipment("Huile d'olive", 365));
+
+        $this->assertSame('ai', $result['source']);
+        $this->assertSame('Groq', $result['provider']);
+        $this->assertNull($result['fallback_reason']);
+        $this->assertSame('plan_rail', $result['recommended']['key']);
+        // 25 est l'arrondi de 24,68 : le conseil est gardé
+        $this->assertSame(['Le plan émet environ 25 kg.'], $result['tips']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_negative_saving_is_shown_as_extra_emissions(): void
+    {
+        $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.create'))
             ->assertOk()
-            ->assertSee('Recommandation IA');
+            ->assertSee('Surcoût vs ', false)
+            ->assertSee('Mode secours (hors-ligne)', false);
 
-        // Le poids de l'expédition est utilisé par défaut
-        $this->postJson($url, ['distance_km' => 500])
+        // 250 km, 50 kg, 5 h : seul l'utilitaire respecte le délai, il émet plus que le camion porteur
+        $result = $this->recommender()->recommend(250, 50, 5);
+        $this->assertSame('mode_van', $result['recommended']['key']);
+        $this->assertLessThan(0, $result['saving_kg']);
+    }
+
+    public function test_recommendation_works_before_the_shipment_is_saved_without_api_key(): void
+    {
+        $url = route('pro.distributor.shipments.transport-recommendation');
+        $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.create'))
+            ->assertOk()
+            ->assertSee('ai-recommend-btn', false);
+
+        // Sans lot de production, la nature est déduite du nom saisi dans le formulaire
+        $this->postJson($url, ['distance_km' => 500, 'weight_kg' => 2000, 'product_name' => 'Fraises'])
             ->assertOk()
             ->assertJsonPath('source', 'local')
             ->assertJsonPath('product.class', 'perishable')
             ->assertJsonPath('recommended.key', 'mode_truck_heavy')
             ->assertJsonPath('reference.code', 'truck_light');
 
-        $this->postJson($url, ['distance_km' => ''])->assertUnprocessable()->assertJsonValidationErrors('distance_km');
+        // Avec le lot de production choisi : sa DLC (6 mois) en fait un produit durable, plan ferroviaire en 3 étapes
+        $lot = $this->productionLot("Huile d'olive", 'Olives');
+        $this->postJson($url, ['distance_km' => 500, 'weight_kg' => 2000, 'production_lot_id' => $lot->id])
+            ->assertOk()
+            ->assertJsonPath('product.name', "Huile d'olive")
+            ->assertJsonPath('product.lot_code', $lot->qr_code_data)
+            ->assertJsonPath('product.class', 'durable')
+            ->assertJsonPath('recommended.key', 'plan_rail')
+            ->assertJsonCount(3, 'recommended.legs')
+            ->assertJsonPath('recommended.legs.1.code', 'rail');
 
+        // Aucune expédition n'est créée par la recommandation
+        $this->assertDatabaseCount('shipments', 0);
+        Http::assertNothingSent();
+
+        $this->postJson($url, ['distance_km' => '', 'weight_kg' => ''])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['distance_km', 'weight_kg']);
+    }
+
+    public function test_recommendation_before_saving_uses_the_ai_when_a_key_is_set(): void
+    {
+        config(['services.ai.key' => 'test-key']);
+        Http::fake(['ai.test/*' => Http::response($this->aiMessage(
+            '{"choice": "plan_rail", "explanation": "Le lot se conserve : le train divise le CO2.", "tips": []}'
+        ))]);
+        $lot = $this->productionLot("Huile d'olive", 'Olives');
+
+        $this->actingAs($this->distributor)
+            ->postJson(route('pro.distributor.shipments.transport-recommendation'), [
+                'distance_km' => 500, 'weight_kg' => 2000, 'max_hours' => 72, 'production_lot_id' => $lot->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('source', 'ai')
+            ->assertJsonPath('recommended.key', 'plan_rail')
+            ->assertJsonPath('explanation', 'Le lot se conserve : le train divise le CO2.');
+
+        // L'IA reçoit les données du formulaire : lot, poids, distance et délai
+        Http::assertSent(fn (Request $request) => str_contains($request['messages'][1]['content'], $lot->qr_code_data)
+            && str_contains($request['messages'][1]['content'], '500 km, 2000 kg')
+            && str_contains($request['messages'][1]['content'], 'délai souhaité par le distributeur 72 h'));
+    }
+
+    public function test_recommendation_cannot_use_another_distributors_data(): void
+    {
         $other = User::factory()->create(['role' => 'pro', 'pro_type' => 'distributor', 'status' => 'approved']);
-        $this->actingAs($other)->postJson($url, ['distance_km' => 500])->assertForbidden();
+        $foreignStore = PointOfSale::create([
+            'user_id' => $other->id, 'name' => 'Magasin concurrent', 'type' => 'store', 'address' => 'Rue X', 'city' => 'Sousse',
+        ]);
+        $foreignShipment = Shipment::create([
+            'reference' => Shipment::nextReference(), 'user_id' => $other->id, 'product_name' => 'Huile',
+            'weight_kg' => 100, 'origin_address' => 'Sfax', 'status' => 'planned',
+        ]);
+        $url = route('pro.distributor.shipments.transport-recommendation');
+
+        $this->postJson($url, ['distance_km' => 500, 'weight_kg' => 100])->assertUnauthorized();
+
+        $this->actingAs($this->distributor)
+            ->postJson($url, ['distance_km' => 500, 'weight_kg' => 100, 'point_of_sale_id' => $foreignStore->id, 'shipment_id' => $foreignShipment->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['point_of_sale_id', 'shipment_id']);
+    }
+
+    public function test_grouping_tip_works_for_a_shipment_not_yet_saved(): void
+    {
+        $pointOfSale = PointOfSale::create([
+            'user_id' => $this->distributor->id, 'name' => 'Épicerie Bio', 'type' => 'store', 'address' => 'Rue de Marseille', 'city' => 'Tunis',
+        ]);
+        $planned = $this->shipment('Colis divers', null, 1, ['point_of_sale_id' => $pointOfSale->id]);
+
+        $this->actingAs($this->distributor)
+            ->postJson(route('pro.distributor.shipments.transport-recommendation'), [
+                'distance_km' => 150, 'weight_kg' => 2000, 'product_name' => 'Colis divers', 'point_of_sale_id' => $pointOfSale->id,
+            ])
+            ->assertOk()
+            ->assertJsonFragment(["Regroupez avec {$planned->reference} vers Épicerie Bio : un seul trajet au lieu de 2."]);
+
+        // En modification, l'expédition ne se propose pas de se regrouper avec elle-même
+        $this->postJson(route('pro.distributor.shipments.transport-recommendation'), [
+            'distance_km' => 150, 'weight_kg' => 2000, 'product_name' => 'Colis divers',
+            'point_of_sale_id' => $pointOfSale->id, 'shipment_id' => $planned->id,
+        ])->assertOk()->assertJsonMissing(["Regroupez avec {$planned->reference} vers Épicerie Bio : un seul trajet au lieu de 2."]);
     }
 }

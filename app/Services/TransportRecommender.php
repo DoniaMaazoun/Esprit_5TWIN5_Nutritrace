@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -12,9 +15,10 @@ use Illuminate\Support\Str;
  *
  * Tous les chiffres (CO2 = distance x tonnes x facteur ADEME, durées, faisabilité) sont calculés
  * ici, pour des modes uniques et des plans multimodaux (camion -> train -> utilitaire...).
- * L'IA (service AiAssistant du module 1, même fournisseur et même clé) choisit parmi les
+ * L'IA (même fournisseur et même clé que l'assistant du module 1) choisit parmi les
  * options possibles en tenant compte de la nature du produit, explique son choix et donne
- * des conseils. Sans clé API, ou si sa réponse est inutilisable, des règles simples prennent le relais.
+ * des conseils. Sans clé API, ou si sa réponse est inutilisable, des règles simples prennent le relais
+ * et la raison est journalisée.
  */
 class TransportRecommender
 {
@@ -43,6 +47,15 @@ class TransportRecommender
     private const FIRST_MILE_KM = 30;
 
     private const LAST_MILE_KM = 20;
+
+    /** Raisons du passage en mode de secours, affichées sous le badge */
+    private const FALLBACK_REASONS = [
+        'no_key' => 'pas de clé',
+        'unreachable' => 'IA injoignable',
+        'api_error' => 'erreur du service IA',
+        'invalid' => 'réponse invalide',
+        'no_feasible' => 'aucune option ne respecte les contraintes',
+    ];
 
     /** Camion de référence pour calculer le gain, par ordre de préférence */
     private const REFERENCE_TRUCKS = ['truck_light', 'truck_heavy'];
@@ -95,9 +108,12 @@ class TransportRecommender
         $reference = $this->reference($options);
         $tips = $this->localTips($options, $product, $limit, $maxHours, $weightKg, $shipment);
 
-        $aiChoice = $feasible->isNotEmpty()
-            ? $this->askAi($distanceKm, $weightKg, $maxHours, $product, $limit, $options, $reference, $tips)
-            : null;
+        $ai = match (true) {
+            ! $this->ai->isEnabled() => ['choice' => null, 'reason' => 'no_key', 'detail' => 'AI_API_KEY absente de la configuration'],
+            $feasible->isEmpty() => ['choice' => null, 'reason' => 'no_feasible', 'detail' => 'aucune option ne respecte le délai ou la capacité'],
+            default => $this->askAi($distanceKm, $weightKg, $maxHours, $product, $limit, $options, $reference, $tips),
+        };
+        $aiChoice = $ai['choice'];
 
         if ($aiChoice) {
             $recommended = $feasible->firstWhere('key', $aiChoice['key']);
@@ -105,6 +121,7 @@ class TransportRecommender
             $tips = $aiChoice['tips'] ?: $tips;
             $source = 'ai';
         } else {
+            $this->logFallback($ai['reason'], $ai['detail']);
             // Mode de secours : l'option possible la moins émettrice,
             // ou la plus rapide si aucune ne respecte le délai
             $recommended = $feasible->isNotEmpty()
@@ -118,6 +135,8 @@ class TransportRecommender
 
         return [
             'source' => $source,
+            'provider' => $source === 'ai' ? $this->aiProvider() : null,
+            'fallback_reason' => $source === 'local' ? self::FALLBACK_REASONS[$ai['reason']] : null,
             'product' => $product,
             'max_hours' => $limit['hours'],
             'recommended' => $recommended,
@@ -386,9 +405,10 @@ class TransportRecommender
             $tips[] = "Date limite du lot le {$product['expiry_date']} : livrez sous {$this->hours($product['max_hours'])} h pour qu'il reste vendable.";
         }
 
-        if ($shipment) {
+        // L'expédition peut être un brouillon non enregistré (formulaire de création)
+        if ($shipment?->point_of_sale_id) {
             $siblings = Shipment::where('user_id', $shipment->user_id)
-                ->whereKeyNot($shipment->id)
+                ->when($shipment->exists, fn ($query) => $query->whereKeyNot($shipment->id))
                 ->where('status', 'planned')
                 ->whereNotNull('point_of_sale_id')
                 ->where('point_of_sale_id', $shipment->point_of_sale_id)
@@ -417,17 +437,13 @@ class TransportRecommender
     // ==================== IA ====================
 
     /**
-     * Demande à l'IA de choisir parmi les options possibles. Retourne null si l'IA est
-     * indisponible ou si sa réponse ne désigne pas une option possible.
+     * Demande à l'IA de choisir parmi les options possibles. Sans choix utilisable,
+     * « reason » (clé de FALLBACK_REASONS) et « detail » disent pourquoi.
      *
-     * @return array{key: string, explanation: string, tips: array<int, string>}|null
+     * @return array{choice: ?array{key: string, explanation: string, tips: array<int, string>}, reason: ?string, detail: ?string}
      */
-    private function askAi(float $distanceKm, float $weightKg, ?float $maxHours, array $product, array $limit, Collection $options, ?array $reference, array $tips): ?array
+    private function askAi(float $distanceKm, float $weightKg, ?float $maxHours, array $product, array $limit, Collection $options, ?array $reference, array $tips): array
     {
-        if (! $this->ai->isEnabled()) {
-            return null;
-        }
-
         $table = $options->map(fn ($o) => sprintf(
             '- [%s] %s : %s kg CO2e, environ %s h%s%s',
             $o['key'],
@@ -469,83 +485,226 @@ class TransportRecommender
             ."Options calculées (facteurs ADEME) :\n{$table}\n"
             .($tips ? "Pistes calculées :\n- ".implode("\n- ", $tips) : '');
 
-        $this->warmUpDns();
+        $messages = [
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user', 'content' => $facts],
+        ];
 
-        // Une réponse reçue mais inutilisable (tronquée, mauvais format) est redemandée une fois.
-        // Sans réponse du tout (réseau, clé), on passe directement au mode de secours.
+        // Une réponse reçue mais inutilisable (tronquée, mauvais format, option impossible) est
+        // redemandée une fois en expliquant le problème au modèle. Sans réponse du tout (réseau,
+        // erreur du service), on passe directement au mode de secours.
+        $failure = null;
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             // Marge de tokens : les modèles « à raisonnement » (gpt-oss…) les consomment avant de répondre
-            $answer = $this->ai->ask($system, $facts, 1500);
-            if (! $answer) {
-                return null;
+            $call = $this->callAi($messages, $attempt === 1 ? 2000 : 3000);
+            if ($call['content'] === null) {
+                return ['choice' => null, 'reason' => $call['reason'], 'detail' => $call['detail']];
             }
-            if ($choice = $this->parseAiAnswer($answer, $options, $facts)) {
-                return $choice;
+
+            $parsed = $this->parseAiAnswer($call['content'], $options, $facts);
+            if ($parsed['choice']) {
+                return ['choice' => $parsed['choice'], 'reason' => null, 'detail' => null];
             }
+
+            $failure = ['choice' => null, 'reason' => 'invalid', 'detail' => "{$parsed['error']} (tentative {$attempt}) : ".Str::limit($call['content'], 300)];
+            $messages[] = ['role' => 'assistant', 'content' => Str::limit($call['content'], 1500)];
+            $messages[] = ['role' => 'user', 'content' => "Réponse inutilisable : {$parsed['error']}. Réponds uniquement avec le JSON demandé. "
+                .'Le champ "choice" doit être exactement l\'une de ces clés : '.$options->where('feasible', true)->pluck('key')->implode(', ').'.'];
         }
 
-        return null;
+        return $failure;
     }
 
     /**
-     * @return array{key: string, explanation: string, tips: array<int, string>}|null
+     * Appel « chat completions » (API compatible OpenAI, même configuration que l'assistant du module 1).
+     * L'adresse IP de l'API est résolue par PHP et transmise à cURL : sur certains postes Windows,
+     * la résolution DNS (plus de 10 s) dépasse le délai de connexion de cURL.
+     *
+     * @return array{content: ?string, reason: ?string, detail: ?string}
      */
-    private function parseAiAnswer(string $answer, Collection $options, string $facts): ?array
+    private function callAi(array $messages, int $maxTokens): array
     {
-        // Le modèle peut entourer le JSON de texte ou de balises ```json
-        if (! preg_match('/\{.*\}/s', $answer, $match)) {
-            return null;
-        }
-        $data = json_decode($match[0], true);
-        if (! is_array($data)) {
-            return null;
+        $url = rtrim((string) config('services.ai.base_url'), '/').'/chat/completions';
+        $resolve = $this->resolveApiHost($url);
+
+        try {
+            $response = Http::withToken((string) config('services.ai.key'))
+                ->acceptJson()
+                ->connectTimeout(15)
+                ->timeout(45)
+                ->withOptions($resolve ? ['curl' => [CURLOPT_RESOLVE => [$resolve]]] : [])
+                ->post($url, [
+                    'model' => config('services.ai.model'),
+                    'messages' => $messages,
+                    'temperature' => 0.7,
+                    'max_tokens' => $maxTokens,
+                ]);
+        } catch (\Throwable $e) {
+            // L'IP gardée en cache a pu changer : elle sera résolue à nouveau au prochain appel
+            Cache::forget($this->dnsCacheKey($url));
+
+            return ['content' => null, 'reason' => 'unreachable', 'detail' => $e->getMessage()];
         }
 
-        // Tolère « [plan_rail] » ou des guillemets autour de la clé
-        $key = trim((string) ($data['choice'] ?? ''), " \t\n[]\"'`");
-        $explanation = trim((string) ($data['explanation'] ?? ''));
-        if ($explanation === '' || ! $options->contains(fn ($o) => $o['key'] === $key && $o['feasible'])) {
+        if ($response->failed()) {
+            return ['content' => null, 'reason' => 'api_error', 'detail' => 'HTTP '.$response->status().' : '.Str::limit($response->body(), 300)];
+        }
+
+        // Une réponse vide (limite de tokens atteinte pendant le raisonnement) est traitée comme invalide
+        return ['content' => trim((string) $response->json('choices.0.message.content')), 'reason' => null, 'detail' => null];
+    }
+
+    /**
+     * Entrée CURLOPT_RESOLVE (« hôte:port:ip ») de l'API, l'IP étant gardée en cache 6 h
+     */
+    private function resolveApiHost(string $url): ?string
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (! $host || filter_var($host, FILTER_VALIDATE_IP) || app()->runningUnitTests()) {
             return null;
+        }
+        $port = parse_url($url, PHP_URL_PORT) ?: (parse_url($url, PHP_URL_SCHEME) === 'http' ? 80 : 443);
+
+        $ip = Cache::get($this->dnsCacheKey($url));
+        if (! $ip) {
+            $resolved = gethostbyname($host);
+            if (! filter_var($resolved, FILTER_VALIDATE_IP)) {
+                return null;
+            }
+            Cache::put($this->dnsCacheKey($url), $ip = $resolved, now()->addHours(6));
+        }
+
+        return "{$host}:{$port}:{$ip}";
+    }
+
+    private function dnsCacheKey(string $url): string
+    {
+        return 'module3.ai_ip.'.parse_url($url, PHP_URL_HOST);
+    }
+
+    /**
+     * Analyse tolérante de la réponse : JSON entouré de texte ou de ```json, virgules finales,
+     * guillemets typographiques, clé entre crochets, code du mode (« rail ») ou nom de l'option.
+     *
+     * @return array{choice: ?array{key: string, explanation: string, tips: array<int, string>}, error: ?string}
+     */
+    private function parseAiAnswer(string $answer, Collection $options, string $facts): array
+    {
+        if ($answer === '') {
+            return ['choice' => null, 'error' => 'réponse vide (limite de tokens atteinte ?)'];
+        }
+
+        $data = $this->decodeAiJson($answer);
+        if ($data === null) {
+            return ['choice' => null, 'error' => 'JSON illisible'];
+        }
+
+        $explanation = trim((string) ($data['explanation'] ?? ''));
+        if ($explanation === '') {
+            return ['choice' => null, 'error' => 'explication manquante'];
+        }
+
+        $choice = is_string($data['choice'] ?? null) ? $data['choice'] : '';
+        $option = $this->matchOption($choice, $options);
+        if (! $option) {
+            return ['choice' => null, 'error' => "option inconnue « {$choice} »"];
+        }
+        if (! $option['feasible']) {
+            return ['choice' => null, 'error' => "option impossible « {$option['key']} » (".(! $option['fits_capacity'] ? 'capacité dépassée' : 'délai dépassé').')'];
         }
 
         // Les chiffres restent ceux du calcul local : un conseil citant un nombre absent des données est écarté
-        $allowed = $this->numbersIn($facts);
+        $allowed = $this->numbersIn($facts, true);
         $aiTips = collect(is_array($data['tips'] ?? null) ? $data['tips'] : [])
             ->filter(fn ($tip) => is_string($tip) && trim($tip) !== '')
             ->filter(fn ($tip) => array_diff($this->numbersIn($tip), $allowed) === [])
             ->map(fn ($tip) => Str::limit(trim($tip), 300))
             ->take(2)->values()->all();
 
-        return ['key' => $key, 'explanation' => Str::limit($explanation, 600), 'tips' => $aiTips];
+        return ['choice' => ['key' => $option['key'], 'explanation' => Str::limit($explanation, 600), 'tips' => $aiTips], 'error' => null];
+    }
+
+    private function decodeAiJson(string $answer): ?array
+    {
+        $start = strpos($answer, '{');
+        $end = strrpos($answer, '}');
+        if ($start === false || $end === false || $end < $start) {
+            return null;
+        }
+        $json = substr($answer, $start, $end - $start + 1);
+
+        $data = json_decode($json, true);
+        if (! is_array($data)) {
+            $data = json_decode(preg_replace('/,\s*([}\]])/', '$1', str_replace(['“', '”'], '"', $json)), true);
+        }
+
+        return is_array($data) ? $data : null;
+    }
+
+    private function matchOption(string $choice, Collection $options): ?array
+    {
+        $normalized = Str::lower(trim($choice, " \t\n[]\"'`"));
+        if ($normalized === '') {
+            return null;
+        }
+
+        foreach ([$normalized, 'mode_'.$normalized, 'plan_'.$normalized] as $candidate) {
+            if ($option = $options->firstWhere('key', $candidate)) {
+                return $option;
+            }
+        }
+
+        return $options->first(fn ($o) => str_contains($normalized, $o['key']))
+            ?? $options->first(fn ($o) => Str::lower($o['name']) === $normalized);
     }
 
     /**
-     * Nombres d'un texte, normalisés (« 2 000 » -> 2000, « 24,68 » -> 24.68)
+     * Nombres d'un texte, normalisés (« 2 000 » -> 2000, « 24,68 » -> 24.68). Avec $rounded,
+     * leurs arrondis (24.7, 25) sont ajoutés : un conseil peut citer un chiffre arrondi.
      *
      * @return array<int, string>
      */
-    private function numbersIn(string $text): array
+    private function numbersIn(string $text, bool $rounded = false): array
     {
         $text = preg_replace('/(\d)[\s\x{00A0}\x{202F}](?=\d{3}\b)/u', '$1', $text);
         preg_match_all('/\d+(?:[.,]\d+)?/', $text, $matches);
+        $numbers = array_map(fn ($n) => (float) str_replace(',', '.', $n), $matches[0]);
 
-        return array_values(array_unique(array_map(
-            fn ($n) => (string) (float) str_replace(',', '.', $n),
-            $matches[0]
-        )));
+        if ($rounded) {
+            foreach ($numbers as $n) {
+                array_push($numbers, round($n, 1), round($n));
+            }
+        }
+
+        return array_values(array_unique(array_map(fn ($n) => (string) $n, $numbers)));
     }
 
     /**
-     * Résout le nom de l'API avant l'appel : sur certains postes Windows la résolution DNS
-     * dépasse les 10 s de connexion de cURL, alors que celle de PHP n'a pas cette limite
-     * et met le résultat en cache pour l'appel qui suit.
+     * La vraie raison du passage en mode de secours est écrite dans storage/logs/laravel.log
      */
-    private function warmUpDns(): void
+    private function logFallback(string $reason, ?string $detail): void
     {
-        $host = parse_url((string) config('services.ai.base_url'), PHP_URL_HOST);
-        if ($host && ! app()->runningUnitTests()) {
-            gethostbyname($host);
+        Log::warning('Module 3 - recommandation de transport en mode secours : '.self::FALLBACK_REASONS[$reason], [
+            'raison' => $reason,
+            'detail' => $detail,
+            'modele' => config('services.ai.model'),
+        ]);
+    }
+
+    /**
+     * Nom du fournisseur d'IA affiché sur le badge (« Groq », « OpenAI »…)
+     */
+    private function aiProvider(): string
+    {
+        $host = (string) parse_url((string) config('services.ai.base_url'), PHP_URL_HOST);
+
+        foreach (['groq' => 'Groq', 'openai' => 'OpenAI', 'mistral' => 'Mistral', 'googleapis' => 'Gemini', 'localhost' => 'Ollama'] as $needle => $name) {
+            if (str_contains($host, $needle)) {
+                return $name;
+            }
         }
+
+        return $host ?: 'IA';
     }
 
     // ==================== MODE DE SECOURS ====================

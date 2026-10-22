@@ -162,16 +162,18 @@ class CarbonDashboardTest extends TestCase
     public function test_leg_coordinates_and_recommendation_flag_are_saved(): void
     {
         $shipment = $this->shipment($this->distributor, 'planned', '2026-10-17 08:00', 1000, []);
+        $data = ['product_name' => 'Olives', 'weight_kg' => 1000, 'origin_address' => 'Sfax', 'status' => 'planned'];
 
-        $this->actingAs($this->distributor)->post(route('pro.distributor.shipments.legs.store', $shipment), [
-            'transport_mode_id' => TransportMode::where('code', 'truck_heavy')->value('id'),
-            'from_location' => 'Sfax',
-            'to_location' => 'Tunis',
-            'to_latitude' => 36.8065,
-            'to_longitude' => 10.1815,
-            'distance_km' => 270,
-            'weight_kg' => 1000,
-            'from_recommendation' => 1,
+        $this->actingAs($this->distributor)->put(route('pro.distributor.shipments.update', $shipment), $data + [
+            'legs' => [[
+                'transport_mode_id' => TransportMode::where('code', 'truck_heavy')->value('id'),
+                'from_location' => 'Sfax',
+                'to_location' => 'Tunis',
+                'to_latitude' => 36.8065,
+                'to_longitude' => 10.1815,
+                'distance_km' => 270,
+                'from_recommendation' => 1,
+            ]],
         ])->assertRedirect(route('pro.distributor.shipments.show', $shipment));
 
         $leg = $shipment->legs()->firstOrFail();
@@ -179,11 +181,12 @@ class CarbonDashboardTest extends TestCase
         $this->assertTrue($leg->from_recommendation);
 
         // Une latitude sans longitude est refusée
-        $this->post(route('pro.distributor.shipments.legs.store', $shipment), [
-            'transport_mode_id' => TransportMode::where('code', 'van')->value('id'),
-            'from_location' => 'Tunis', 'to_location' => 'Lac 2', 'to_latitude' => 36.84,
-            'distance_km' => 12, 'weight_kg' => 1000,
-        ])->assertSessionHasErrors('to_longitude');
+        $this->put(route('pro.distributor.shipments.update', $shipment), $data + [
+            'legs' => [[
+                'transport_mode_id' => TransportMode::where('code', 'van')->value('id'),
+                'from_location' => 'Tunis', 'to_location' => 'Lac 2', 'to_latitude' => 36.84, 'distance_km' => 12,
+            ]],
+        ])->assertSessionHasErrors('legs.0.to_longitude');
     }
 
     public function test_map_data_draws_known_legs_and_reports_missing_coordinates(): void
