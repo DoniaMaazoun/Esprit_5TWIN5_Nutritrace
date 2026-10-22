@@ -156,7 +156,10 @@ class ProDashboardController extends Controller
             ]
         };
 
-        return view('pro.dashboard', [
+        // pro.dashboard est la vue du transformateur (Module 2) ; le distributeur (Module 3) a la sienne
+        $view = $proType === 'distributor' ? 'pro.distributor.home' : 'pro.dashboard';
+
+        return view($view, [
             'user' => $user,
             'companyName' => $companyName,
             'taxId' => $taxId,
