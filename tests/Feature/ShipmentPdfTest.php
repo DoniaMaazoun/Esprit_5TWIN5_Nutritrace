@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Farm;
 use App\Models\Harvest;
+use App\Models\ProductionLot;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use App\Models\User;
 use Database\Seeders\TransportModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\BuildsProductionChain;
 use Tests\TestCase;
 
 /**
@@ -16,11 +17,13 @@ use Tests\TestCase;
  */
 class ShipmentPdfTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsProductionChain, RefreshDatabase;
 
     private User $distributor;
 
     private Shipment $shipment;
+
+    private ProductionLot $lot;
 
     protected function setUp(): void
     {
@@ -29,21 +32,16 @@ class ShipmentPdfTest extends TestCase
         $this->seed(TransportModeSeeder::class);
         $this->distributor = $this->makeDistributor();
 
-        $producer = User::factory()->create(['role' => 'pro', 'pro_type' => 'producer', 'status' => 'approved']);
-        $farm = Farm::forceCreate([
-            'user_id' => $producer->id, 'name' => 'Domaine des Oliviers', 'governorate' => 'Sfax', 'city' => 'Agareb',
-            'total_area' => 10, 'farming_type' => 'organic', 'irrigation_type' => 'drip',
-        ]);
-        $harvest = Harvest::create([
-            'farm_id' => $farm->id, 'product_name' => 'Olive', 'variety' => 'Chemlali', 'harvest_date' => '2026-10-01',
-            'quantity' => 2, 'unit' => 'tonne', 'quality_grade' => 'A',
-        ]);
+        // Huile produite par un transformateur à partir d'olives du Domaine des Oliviers
+        $this->lot = $this->productionLot('Huile vierge extra Chemlali', 'Olive', [
+            'production_date' => '2026-10-05', 'expiry_date' => '2027-10-05',
+        ], ['name' => 'Domaine des Oliviers', 'governorate' => 'Sfax', 'city' => 'Agareb'], processor: ['company_name' => 'Huilerie Test']);
 
         $this->shipment = Shipment::create([
             'reference' => Shipment::nextReference(),
             'user_id' => $this->distributor->id,
-            'harvest_id' => $harvest->id,
-            'product_name' => 'Olive Chemlali',
+            'production_lot_id' => $this->lot->id,
+            'product_name' => 'Huile vierge extra Chemlali',
             'weight_kg' => 2000,
             'origin_address' => 'Huilerie, Sfax',
             'status' => 'in_transit',
@@ -87,15 +85,24 @@ class ShipmentPdfTest extends TestCase
         $this->actingAs($producer)->get($url)->assertRedirect(route('pro.dashboard'));
     }
 
-    public function test_report_contains_batch_legs_events_and_total_co2(): void
+    public function test_report_contains_production_lot_origin_legs_events_and_total_co2(): void
     {
         $this->actingAs($this->distributor);
-        $shipment = $this->shipment->load(['user', 'harvest.farm', 'harvest.category', 'pointOfSale', 'legs.transportMode', 'events']);
+        $shipment = $this->shipment->load(['user', 'productionLot.recipe.items', 'productionLot.processor', 'pointOfSale', 'legs.transportMode', 'events']);
 
-        $html = view('pro.distributor.shipments.pdf', ['shipment' => $shipment])->render();
+        $html = view('pro.distributor.shipments.pdf', [
+            'shipment' => $shipment,
+            'originHarvests' => $shipment->originHarvests(),
+        ])->render();
 
         $this->assertStringContainsString($shipment->reference, $html);
-        $this->assertStringContainsString($shipment->harvest->batch_code, $html);
+        // Section « Lot de production »
+        $this->assertStringContainsString('Lot de production', $html);
+        $this->assertStringContainsString($this->lot->qr_code_data, $html);
+        $this->assertStringContainsString('Huilerie Test', $html);
+        $this->assertStringContainsString('05/10/2027', $html);
+        // Traçabilité jusqu'à la récolte d'olives
+        $this->assertStringContainsString(Harvest::firstOrFail()->batch_code, $html);
         $this->assertStringContainsString('Domaine des Oliviers', $html);
         $this->assertStringContainsString('Train de fret', $html);
         $this->assertStringContainsString('Gare de Sfax → Gare de Tunis', $html);
@@ -103,5 +110,14 @@ class ShipmentPdfTest extends TestCase
         $this->assertStringContainsString('Huilerie, Sfax', $html);
         // 270 km x 2 t x 0,0052 = 2,81 kg
         $this->assertStringContainsString('2,81', $html);
+    }
+
+    public function test_report_without_production_lot_says_so(): void
+    {
+        $this->shipment->update(['production_lot_id' => null]);
+
+        $html = view('pro.distributor.shipments.pdf', ['shipment' => $this->shipment->fresh()->load(['user', 'pointOfSale', 'legs.transportMode', 'events'])])->render();
+
+        $this->assertStringContainsString('Aucun lot de production relié à cette expédition.', $html);
     }
 }

@@ -87,8 +87,11 @@
 
         field('name').textContent = (isPlan ? 'Plan multimodal : ' : '') + recommended.name;
         field('source').textContent = data.source === 'ai' ? 'IA' : 'Calcul ADEME (hors-ligne)';
+        const origins = data.product.origins || [];
         field('product').textContent = (data.product.name || 'Produit') + ' · ' + data.product.label
-          + (data.product.age_days !== null ? ` · récolté il y a ${data.product.age_days} j` : '')
+          + (data.product.expiry_date ? ` · DLC ${data.product.expiry_date}` : '')
+          + (data.product.days_to_expiry !== null ? ` (${data.product.days_to_expiry} j restants)` : '')
+          + (origins.length ? ' · issu de ' + origins.map((o) => `${o.product_name} récolté le ${o.harvest_date}`).join(', ') : '')
           + (data.max_hours ? ` · délai retenu ${data.max_hours} h` : '');
         field('cold').classList.toggle('d-none', !data.product.refrigerated);
         field('explanation').textContent = data.explanation;

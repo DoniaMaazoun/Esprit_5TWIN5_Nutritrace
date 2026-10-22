@@ -23,7 +23,7 @@ class TransportRecommendationController extends Controller
             'max_hours' => ['nullable', 'numeric', 'min:1', 'max:2000'],
         ]);
 
-        $shipment->load('harvest.category', 'pointOfSale');
+        $shipment->load('productionLot.recipe.items', 'productionLot.processor', 'pointOfSale');
 
         $result = $recommender->recommend(
             (float) $data['distance_km'],

@@ -7,9 +7,10 @@ use App\Models\PointOfSale;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use App\Models\User;
-use Database\Seeders\FarmSeeder;
 use Database\Seeders\TransportModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\BuildsProductionChain;
 use Tests\TestCase;
 
 /**
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class DistributorModuleTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsProductionChain, RefreshDatabase;
 
     private User $distributor;
 
@@ -146,39 +147,75 @@ class DistributorModuleTest extends TestCase
         $this->assertDatabaseCount('shipment_events', 0);
     }
 
-    public function test_shipment_is_linked_to_a_producer_harvest(): void
+    public function test_shipments_reference_production_lots_instead_of_harvests(): void
     {
-        // Lots de démo du module 1 (exploitations & récoltes)
-        $this->seed(FarmSeeder::class);
-        $harvest = Harvest::where('status', 'in_stock')->firstOrFail();
+        $this->assertFalse(Schema::hasColumn('shipments', 'harvest_id'));
+        $this->assertTrue(Schema::hasColumn('shipments', 'production_lot_id'));
+    }
+
+    public function test_shipment_is_linked_to_a_production_lot_traced_back_to_the_harvest(): void
+    {
+        $lot = $this->productionLot('Sauce Tomate Bio', 'Tomates Bio');
+        $harvest = Harvest::firstOrFail();
+        $archived = $this->productionLot('Confiture de figues', 'Figues', ['status' => 'archived']);
 
         $this->actingAs($this->distributor);
-        $this->get(route('pro.distributor.shipments.create'))->assertOk()->assertSee($harvest->batch_code);
+        $this->get(route('pro.distributor.shipments.create'))->assertOk()
+            ->assertSee($lot->qr_code_data)
+            ->assertSee('Sauce Tomate Bio')
+            ->assertDontSee($archived->qr_code_data);
 
-        // Sans nom de produit : il est repris du lot
+        // Sans nom de produit : il est repris de la recette du lot
         $this->post(route('pro.distributor.shipments.store'), [
-            'harvest_id' => $harvest->id,
+            'production_lot_id' => $lot->id,
             'weight_kg' => 500,
-            'origin_address' => $harvest->farm->city,
+            'origin_address' => 'Usine Test, Sousse',
             'status' => 'planned',
         ])->assertRedirect();
 
         $shipment = Shipment::firstOrFail();
-        $this->assertTrue($shipment->harvest->is($harvest));
-        $this->assertSame($harvest->product_name, $shipment->product_name);
-        $this->get(route('pro.distributor.shipments.show', $shipment))->assertOk()->assertSee($harvest->batch_code);
+        $this->assertTrue($shipment->productionLot->is($lot));
+        $this->assertSame('Sauce Tomate Bio', $shipment->product_name);
+
+        // Traçabilité jusqu'à la récolte, déduite des réceptions du transformateur
+        $this->assertCount(1, $shipment->originHarvests());
+        $this->assertTrue($shipment->originHarvests()->first()->is($harvest));
+        $this->get(route('pro.distributor.shipments.show', $shipment))->assertOk()
+            ->assertSee('Lot de production')
+            ->assertSee($lot->qr_code_data)
+            ->assertSee('Usine Test')
+            ->assertSee($harvest->batch_code);
 
         // Un lot inexistant est refusé
         $this->post(route('pro.distributor.shipments.store'), [
-            'harvest_id' => 999999,
+            'production_lot_id' => 999999,
             'weight_kg' => 500,
             'origin_address' => 'Sfax',
             'status' => 'planned',
-        ])->assertSessionHasErrors('harvest_id');
+        ])->assertSessionHasErrors('production_lot_id');
 
         // La suppression du lot ne supprime pas l'expédition
-        $harvest->delete();
-        $this->assertNull($shipment->fresh()->harvest_id);
+        $lot->delete();
+        $this->assertNull($shipment->fresh()->production_lot_id);
+        $this->get(route('pro.distributor.shipments.show', $shipment))->assertOk()->assertSee('Aucun lot de production relié');
+    }
+
+    public function test_origin_harvest_is_reported_missing_when_the_reception_cannot_be_found(): void
+    {
+        $lot = $this->productionLot('Sauce Tomate Bio', 'Tomates Bio', withReception: false);
+        $shipment = $this->distributor->shipments()->create([
+            'reference' => Shipment::nextReference(),
+            'production_lot_id' => $lot->id,
+            'product_name' => 'Sauce Tomate Bio',
+            'weight_kg' => 100,
+            'origin_address' => 'Sousse',
+        ]);
+
+        $this->assertCount(0, $shipment->originHarvests());
+        $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.show', $shipment))
+            ->assertOk()
+            ->assertSee($lot->qr_code_data)
+            ->assertSee("Récolte d'origine non retrouvée.", false);
     }
 
     public function test_distributor_cannot_access_another_distributors_shipment(): void
@@ -222,13 +259,17 @@ class DistributorModuleTest extends TestCase
         $this->delete(route('backend.logistics.transport-modes.destroy', $mode))->assertRedirect();
         $this->assertDatabaseMissing('transport_modes', ['code' => 'cargo_bike']);
 
+        $lot = $this->productionLot('Huile vierge extra', 'Olive');
         $shipment = $this->distributor->shipments()->create([
             'reference' => Shipment::nextReference(),
+            'production_lot_id' => $lot->id,
             'product_name' => 'Huile',
             'weight_kg' => 100,
             'origin_address' => 'Sfax',
         ]);
         $this->get(route('backend.logistics.shipments.index'))->assertOk()->assertSee($shipment->reference);
-        $this->get(route('backend.logistics.shipments.show', $shipment))->assertOk();
+        $this->get(route('backend.logistics.shipments.show', $shipment))->assertOk()
+            ->assertSee($lot->qr_code_data)
+            ->assertSee(Harvest::firstOrFail()->batch_code);
     }
 }

@@ -49,7 +49,8 @@ class TransportRecommender
 
     /**
      * Nature des produits : délai maximal conseillé (h), durée de conservation (jours)
-     * et besoin de froid. Les mots-clés du nom du produit priment sur la catégorie du lot.
+     * et besoin de froid. Pour un lot de production, sa durée de conservation (DLC) prime ;
+     * sinon les mots-clés du nom du produit, puis la catégorie de la récolte d'origine.
      */
     private const PRODUCT_CLASSES = [
         'perishable' => ['label' => 'Périssable', 'max_hours' => 24, 'shelf_days' => 7, 'refrigerated' => true],
@@ -63,6 +64,9 @@ class TransportRecommender
         'agrumes' => 'semi',
         'olives' => 'durable', 'dattes' => 'durable', 'cereales' => 'durable', 'legumineuses' => 'durable',
     ];
+
+    /** Durée de conservation d'un produit transformé (jours entre production et DLC) : seuils des classes */
+    private const SHELF_LIFE_CLASSES = ['perishable' => 10, 'semi' => 60];
 
     private const PRODUCT_KEYWORDS = [
         'durable' => ['huile', 'olive', 'datte', 'ble', 'orge', 'avoine', 'cereale', 'semoule', 'farine', 'pois chiche',
@@ -148,29 +152,73 @@ class TransportRecommender
         return self::CATEGORY_CLASSES[$categorySlug] ?? 'unknown';
     }
 
+    /**
+     * Nature d'un produit transformé d'après sa durée de conservation (production -> DLC)
+     */
+    public function classifyShelfLife(int $shelfDays): string
+    {
+        foreach (self::SHELF_LIFE_CLASSES as $class => $maxDays) {
+            if ($shelfDays <= $maxDays) {
+                return $class;
+            }
+        }
+
+        return 'durable';
+    }
+
+    /**
+     * Nature du produit transporté : elle vient du lot de production (produit transformé, module 2).
+     * Les récoltes d'origine (module 1), si on peut les retrouver, sont gardées pour information
+     * et servent de dernier recours pour la catégorie.
+     */
     private function describeProduct(?Shipment $shipment): array
     {
-        $harvest = $shipment?->harvest;
-        $harvest?->loadMissing('category');
+        $lot = $shipment?->productionLot;
+        $lot?->loadMissing('recipe.items', 'processor');
+        $origins = $shipment ? $shipment->originHarvests() : collect();
+        $origin = $origins->first();
 
-        $name = $shipment?->product_name ?: $harvest?->product_name;
-        $class = $this->classifyProduct($name, $harvest?->category?->slug);
+        $name = $shipment?->product_name ?: $lot?->getProductName();
+        $production = $lot?->production_date;
+        $expiry = $lot?->expiry_date;
+        $shelfDays = $production && $expiry ? (int) max(0, $production->diffInDays($expiry)) : null;
+        $daysToExpiry = $expiry ? (int) floor(now()->startOfDay()->diffInDays($expiry->copy()->startOfDay(), false)) : null;
+
+        if ($shelfDays !== null) {
+            $class = $this->classifyShelfLife($shelfDays);
+            $classBy = 'expiry';
+        } else {
+            $class = $this->classifyProduct($name, $origin?->category?->slug);
+            $classBy = $class === 'unknown' ? null : 'name';
+        }
         $rules = self::PRODUCT_CLASSES[$class];
-        $ageDays = $harvest?->harvest_date ? (int) max(0, $harvest->harvest_date->diffInDays(now())) : null;
 
-        // Plus le lot est ancien, moins il reste de temps pour le transporter
+        // Le lot ne doit pas arriver périmé : le délai est plafonné par les jours restants avant la DLC
         $maxHours = $rules['max_hours'];
-        if ($maxHours !== null && $rules['shelf_days'] !== null && $ageDays !== null) {
-            $maxHours = max(6, min($maxHours, ($rules['shelf_days'] - $ageDays) * 24));
+        if ($daysToExpiry !== null && ($maxHours !== null || $daysToExpiry <= 7)) {
+            $maxHours = max(6, min($maxHours ?? PHP_INT_MAX, $daysToExpiry * 24));
         }
 
         return [
             'name' => $name,
-            'category' => $harvest?->category?->name,
-            'batch_code' => $harvest?->batch_code,
-            'harvest_date' => $harvest?->harvest_date?->format('d/m/Y'),
-            'age_days' => $ageDays,
+            'category' => $origin?->category?->name,
+            'lot_code' => $lot?->qr_code_data,
+            'processor' => $lot ? ($lot->processor->company_name ?: $lot->processor->name) : null,
+            'production_date' => $production?->format('d/m/Y'),
+            'expiry_date' => $expiry?->format('d/m/Y'),
+            'age_days' => $production ? (int) max(0, $production->diffInDays(now())) : null,
+            'shelf_days' => $shelfDays,
+            'days_to_expiry' => $daysToExpiry,
+            'expired' => $daysToExpiry !== null && $daysToExpiry < 0,
+            'origins' => $origins->map(fn ($harvest) => [
+                'batch_code' => $harvest->batch_code,
+                'product_name' => $harvest->product_name,
+                'category' => $harvest->category?->name,
+                'harvest_date' => $harvest->harvest_date?->format('d/m/Y'),
+                'farm' => $harvest->farm?->name,
+            ])->values()->all(),
             'class' => $class,
+            'class_by' => $classBy,
             'label' => $rules['label'],
             'max_hours' => $maxHours,
             'refrigerated' => $rules['refrigerated'],
@@ -325,11 +373,17 @@ class TransportRecommender
                 .($best ? " et économiserait {$kg($gain)} (".round($gain / max($best['co2_kg'], 0.001) * 100).' %).' : '.');
         }
 
+        if ($product['expired']) {
+            $tips[] = "Attention : le lot a dépassé sa date limite ({$product['expiry_date']}). Vérifiez avec le transformateur avant d'expédier.";
+        }
+
         if ($product['refrigerated']) {
-            $tips[] = 'Produit périssable'.($product['age_days'] !== null ? " récolté il y a {$product['age_days']} jour(s)" : '')
+            $tips[] = 'Produit périssable'.($product['age_days'] !== null ? " fabriqué il y a {$product['age_days']} jour(s)" : '')
                 ." : prévoyez un camion frigorifique (2 à 8 °C) et une livraison sous {$this->hours($limit['hours'])} h.";
-        } elseif ($limit['by'] === 'product' && $product['max_hours'] !== null) {
+        } elseif ($limit['by'] === 'product' && $product['class'] === 'semi') {
             $tips[] = "{$product['name']} se conserve quelques semaines : une livraison sous {$this->hours($product['max_hours'])} h suffit, inutile de payer l'express.";
+        } elseif ($limit['by'] === 'product' && ! $product['expired'] && $product['expiry_date']) {
+            $tips[] = "Date limite du lot le {$product['expiry_date']} : livrez sous {$this->hours($product['max_hours'])} h pour qu'il reste vendable.";
         }
 
         if ($shipment) {
@@ -387,10 +441,18 @@ class TransportRecommender
         ))->implode("\n");
 
         $productFacts = 'Produit : '.($product['name'] ?: 'non précisé')
-            .($product['category'] ? " (catégorie {$product['category']})" : '')
+            .($product['lot_code'] ? " (produit transformé, lot {$product['lot_code']}" : ($product['processor'] ? ' (produit transformé' : ''))
+            .($product['processor'] ? ", transformateur {$product['processor']}" : '')
+            .($product['lot_code'] || $product['processor'] ? ')' : '')
             .", nature : {$product['label']}"
-            .($product['age_days'] !== null ? ", récolté il y a {$product['age_days']} jour(s)" : '')
-            .($product['refrigerated'] ? ', transport réfrigéré nécessaire' : '').'.';
+            .($product['age_days'] !== null ? ", fabriqué il y a {$product['age_days']} jour(s)" : '')
+            .($product['days_to_expiry'] !== null ? ", date limite dans {$product['days_to_expiry']} jour(s)" : '')
+            .($product['refrigerated'] ? ', transport réfrigéré nécessaire' : '').'.'
+            .($product['origins']
+                ? ' Matières premières : '.collect($product['origins'])->map(fn ($o) => "{$o['product_name']}"
+                    .($o['category'] ? " ({$o['category']})" : '')
+                    .($o['harvest_date'] ? ", récolte du {$o['harvest_date']}" : ''))->implode(' ; ').'.'
+                : '');
 
         $system = 'Tu es expert en logistique alimentaire bas carbone pour une plateforme tunisienne de traçabilité. '
             .'Choisis la meilleure option parmi celles qui ne sont pas marquées IMPOSSIBLE. Pour un produit périssable, '

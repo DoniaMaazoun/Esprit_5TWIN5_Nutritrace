@@ -1,22 +1,23 @@
 <div class="row g-3">
   <div class="col-md-6">
-    <label for="harvest_id" class="form-label">Lot transporté (module Producteur)</label>
-    <select id="harvest_id" name="harvest_id" class="form-select @error('harvest_id') is-invalid @enderror">
+    <label for="production_lot_id" class="form-label">Lot de production transporté (module Transformateur)</label>
+    <select id="production_lot_id" name="production_lot_id" class="form-select @error('production_lot_id') is-invalid @enderror">
       <option value="">— Aucun lot relié —</option>
-      @foreach($harvests as $harvest)
-        <option value="{{ $harvest->id }}" @selected((string) old('harvest_id', $shipment->harvest_id) === (string) $harvest->id)>
-          {{ $harvest->batch_code }} · {{ $harvest->product_name }} ({{ $harvest->farm->name }})
+      @foreach($productionLots as $lot)
+        <option value="{{ $lot->id }}" @selected((string) old('production_lot_id', $shipment->production_lot_id) === (string) $lot->id)>
+          {{ $lot->qr_code_data ?? 'Lot #'.$lot->id }} · {{ $lot->getProductName() }} · {{ $lot->getQuantityDisplay() }} · produit le {{ $lot->production_date->format('d/m/Y') }}
+          ({{ $lot->processor->company_name ?: $lot->processor->name }})
         </option>
       @endforeach
     </select>
-    <div class="form-text">Optionnel : relie l'expédition à un lot déclaré par un producteur.</div>
-    @error('harvest_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    <div class="form-text">Optionnel : relie l'expédition à un produit fini déclaré par un transformateur.</div>
+    @error('production_lot_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
   </div>
   <div class="col-md-6">
     <label for="product_name" class="form-label">Produit transporté *</label>
     <input type="text" id="product_name" name="product_name" class="form-control @error('product_name') is-invalid @enderror"
            value="{{ old('product_name', $shipment->product_name) }}">
-    <div class="form-text">Laissez vide pour reprendre le nom du lot choisi.</div>
+    <div class="form-text">Laissez vide pour reprendre le nom du produit du lot choisi.</div>
     @error('product_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
   </div>
   <div class="col-md-4">

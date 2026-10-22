@@ -48,7 +48,42 @@
       </div>
       <dl class="row mb-0">
         <dt class="col-sm-3">Produit</dt>
-        <dd class="col-sm-9">{{ $shipment->product_name }}@if($shipment->harvest) · Lot <a href="{{ $shipment->harvest->traceabilityUrl() }}" target="_blank">{{ $shipment->harvest->batch_code }}</a> ({{ $shipment->harvest->farm->name }})@endif</dd>
+        <dd class="col-sm-9">{{ $shipment->product_name }}</dd>
+        <dt class="col-sm-3">Lot de production</dt>
+        <dd class="col-sm-9">
+          @if($lot = $shipment->productionLot)
+            @if($lot->qr_code_data)
+              <a href="{{ route('traceability.show', $lot->qr_code_data) }}" target="_blank">{{ $lot->qr_code_data }}</a>
+            @else
+              Lot #{{ $lot->id }}
+            @endif
+            · {{ $lot->getProductName() }} · {{ $lot->getQuantityDisplay() }}
+            · transformé par {{ $lot->processor->company_name ?: $lot->processor->name }}
+            <div class="small text-muted">
+              Produit le {{ $lot->production_date->format('d/m/Y') }} · à consommer avant le {{ $lot->expiry_date->format('d/m/Y') }}
+              @if($lot->isExpired())<span class="badge bg-danger">Périmé</span>@endif
+            </div>
+          @else
+            <span class="text-muted">Aucun lot de production relié</span>
+          @endif
+        </dd>
+        @if($shipment->productionLot)
+          <dt class="col-sm-3">Origine (récolte)</dt>
+          <dd class="col-sm-9">
+            @forelse($originHarvests as $harvest)
+              <div>
+                Lot <a href="{{ $harvest->traceabilityUrl() }}" target="_blank">{{ $harvest->batch_code }}</a>
+                · {{ $harvest->product_name }}, récolté le {{ $harvest->harvest_date->format('d/m/Y') }}
+                · {{ $harvest->farm->name }} ({{ $harvest->farm->city }})
+              </div>
+            @empty
+              <span class="text-muted">Récolte d'origine non retrouvée.</span>
+            @endforelse
+            @if($originHarvests->isNotEmpty())
+              <div class="small text-muted">Déduite des réceptions du transformateur correspondant aux ingrédients de la recette.</div>
+            @endif
+          </dd>
+        @endif
         <dt class="col-sm-3">Départ</dt>
         <dd class="col-sm-9">{{ $shipment->origin_address }}@if($shipment->departed_at) · {{ $shipment->departed_at->format('d/m/Y H:i') }}@endif</dd>
         <dt class="col-sm-3">Destination</dt>

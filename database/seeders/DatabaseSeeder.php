@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProcessorSeeder::class);
         $this->call(ProcessorRecipeSeeder::class);
 
-        // Module 3 - Distributeur (après le module 1 : les expéditions sont liées aux récoltes)
+        // Module 3 - Distributeur (après le module 2 : les expéditions sont liées aux lots de production)
         $this->call(TransportModeSeeder::class);
         $this->call(DistributorDemoSeeder::class);
     }

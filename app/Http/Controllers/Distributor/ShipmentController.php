@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Distributor;
 
 use App\Http\Controllers\Controller;
-use App\Models\Harvest;
+use App\Models\ProductionLot;
 use App\Models\Shipment;
 use App\Models\TransportMode;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +33,7 @@ class ShipmentController extends Controller
         return view('pro.distributor.shipments.create', [
             'shipment' => new Shipment(['status' => 'planned']),
             'pointsOfSale' => auth()->user()->pointsOfSale()->orderBy('name')->get(),
-            'harvests' => $this->availableHarvests(),
+            'productionLots' => $this->availableProductionLots(),
         ]);
     }
 
@@ -54,10 +54,11 @@ class ShipmentController extends Controller
     {
         $this->authorizeOwner($shipment);
 
-        $shipment->load(['harvest.farm', 'pointOfSale', 'legs.transportMode', 'events']);
+        $shipment->load(['productionLot.recipe.items', 'productionLot.processor', 'pointOfSale', 'legs.transportMode', 'events']);
 
         return view('pro.distributor.shipments.show', [
             'shipment' => $shipment,
+            'originHarvests' => $shipment->originHarvests(),
             'transportModes' => TransportMode::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -69,7 +70,7 @@ class ShipmentController extends Controller
         return view('pro.distributor.shipments.edit', [
             'shipment' => $shipment,
             'pointsOfSale' => auth()->user()->pointsOfSale()->orderBy('name')->get(),
-            'harvests' => $this->availableHarvests($shipment),
+            'productionLots' => $this->availableProductionLots($shipment),
         ]);
     }
 
@@ -97,8 +98,8 @@ class ShipmentController extends Controller
     private function validateData(Request $request): array
     {
         $data = $request->validate([
-            'harvest_id' => ['nullable', 'integer', Rule::exists('harvests', 'id')],
-            'product_name' => ['required_without:harvest_id', 'nullable', 'string', 'max:255'],
+            'production_lot_id' => ['nullable', 'integer', Rule::exists('production_lots', 'id')],
+            'product_name' => ['required_without:production_lot_id', 'nullable', 'string', 'max:255'],
             'weight_kg' => ['required', 'numeric', 'min:0.01'],
             'origin_address' => ['required', 'string', 'max:255'],
             'point_of_sale_id' => [
@@ -110,25 +111,25 @@ class ShipmentController extends Controller
             'delivered_at' => ['nullable', 'date', 'after_or_equal:departed_at'],
         ]);
 
-        // Sans nom saisi, on reprend celui du lot choisi
-        if (empty($data['product_name']) && ! empty($data['harvest_id'])) {
-            $data['product_name'] = Harvest::whereKey($data['harvest_id'])->value('product_name');
+        // Sans nom saisi, on reprend celui du produit fini (recette) du lot choisi
+        if (empty($data['product_name']) && ! empty($data['production_lot_id'])) {
+            $data['product_name'] = ProductionLot::with('recipe')->find($data['production_lot_id'])?->getProductName();
         }
 
         return $data;
     }
 
     /**
-     * Lots du module 1 qu'un distributeur peut expédier (en stock ou déjà expédiés),
-     * plus le lot déjà relié à l'expédition modifiée
+     * Lots de production du module 2 qu'un distributeur peut expédier (produits, emballés
+     * ou déjà expédiés, pas archivés), plus le lot déjà relié à l'expédition modifiée
      */
-    private function availableHarvests(?Shipment $shipment = null)
+    private function availableProductionLots(?Shipment $shipment = null)
     {
-        return Harvest::with('farm')
+        return ProductionLot::with(['recipe', 'processor'])
             ->where(fn ($query) => $query
-                ->whereIn('status', ['in_stock', 'shipped'])
-                ->when($shipment?->harvest_id, fn ($q, $id) => $q->orWhere('id', $id)))
-            ->orderByDesc('harvest_date')
+                ->whereIn('status', ['produced', 'packaged', 'shipped'])
+                ->when($shipment?->production_lot_id, fn ($q, $id) => $q->orWhere('id', $id)))
+            ->orderByDesc('production_date')
             ->get();
     }
 

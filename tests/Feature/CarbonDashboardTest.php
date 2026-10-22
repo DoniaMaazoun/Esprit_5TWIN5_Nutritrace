@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Farm;
-use App\Models\Harvest;
 use App\Models\PointOfSale;
 use App\Models\Shipment;
 use App\Models\TransportMode;
@@ -12,6 +10,7 @@ use App\Services\CarbonDashboard;
 use Database\Seeders\TransportModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Concerns\BuildsProductionChain;
 use Tests\TestCase;
 
 /**
@@ -19,7 +18,7 @@ use Tests\TestCase;
  */
 class CarbonDashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsProductionChain, RefreshDatabase;
 
     private User $distributor;
 
@@ -189,14 +188,7 @@ class CarbonDashboardTest extends TestCase
 
     public function test_map_data_draws_known_legs_and_reports_missing_coordinates(): void
     {
-        $producer = User::factory()->create(['role' => 'pro', 'pro_type' => 'producer', 'status' => 'approved']);
-        $farm = Farm::forceCreate([
-            'user_id' => $producer->id, 'name' => 'Domaine des Oliviers', 'governorate' => 'Sfax', 'city' => 'Agareb',
-            'total_area' => 10, 'farming_type' => 'organic', 'irrigation_type' => 'drip', 'latitude' => 34.74, 'longitude' => 10.52,
-        ]);
-        $harvest = Harvest::create([
-            'farm_id' => $farm->id, 'product_name' => 'Olive', 'harvest_date' => '2026-10-01', 'quantity' => 2, 'unit' => 'tonne', 'quality_grade' => 'A',
-        ]);
+        $lot = $this->productionLot('Huile vierge extra', 'Olive');
         $store = PointOfSale::create([
             'user_id' => $this->distributor->id, 'name' => 'Épicerie Bio', 'type' => 'store', 'address' => 'Lac 2', 'city' => 'Tunis',
             'latitude' => 36.8437, 'longitude' => 10.2733,
@@ -206,25 +198,50 @@ class CarbonDashboardTest extends TestCase
         $shipment = $this->shipment($this->distributor, 'planned', '2026-10-17 08:00', 1000, [
             ['rail', 270, false, ['to_latitude' => 36.7948, 'to_longitude' => 10.1802]],
             ['van', 12],
-        ], ['harvest_id' => $harvest->id, 'point_of_sale_id' => $store->id]);
+        ], ['production_lot_id' => $lot->id, 'point_of_sale_id' => $store->id]);
 
+        // Le transformateur n'a pas de coordonnées : départ signalé, le reste du trajet est tracé
         $map = $shipment->fresh()->mapData();
+        $this->assertCount(1, $map['segments']);
+        $this->assertSame([36.7948, 10.1802], $map['segments'][0]['from']);
+        $this->assertSame([36.8437, 10.2733], $map['segments'][0]['to']);
+        $this->assertSame(Shipment::MODE_COLORS['van'], $map['segments'][0]['color']);
+        $this->assertSame(["Départ : le transformateur Usine Test n'a pas de coordonnées"], $map['missing']);
+
+        // Si le site du transformateur est géolocalisé, il devient le point de départ
+        $located = $shipment->fresh()->load('productionLot.processor');
+        $located->productionLot->processor->forceFill(['latitude' => 35.8256, 'longitude' => 10.6084]);
+        $map = $located->mapData();
         $this->assertCount(2, $map['segments']);
-        $this->assertSame([34.74, 10.52], $map['segments'][0]['from']);
+        $this->assertSame([35.8256, 10.6084], $map['segments'][0]['from']);
         $this->assertSame(Shipment::MODE_COLORS['rail'], $map['segments'][0]['color']);
-        $this->assertSame([36.8437, 10.2733], $map['segments'][1]['to']);
+        $this->assertSame('start', $map['markers'][0]['type']);
         $this->assertSame([], $map['missing']);
 
         // Sans coordonnées pour l'étape 1, elle est signalée et le trajet n'est pas cassé
         $shipment->legs()->where('position', 1)->update(['to_latitude' => null, 'to_longitude' => null]);
         $map = $shipment->fresh()->mapData();
         $this->assertCount(0, $map['segments']);
-        $this->assertSame(['Étape 1 : B1'], $map['missing']);
+        $this->assertSame(["Départ : le transformateur Usine Test n'a pas de coordonnées", 'Étape 1 : B1'], $map['missing']);
 
         $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.show', $shipment))
             ->assertOk()
             ->assertSee('Carte du trajet')
             ->assertSee('shipment-map')
-            ->assertSee('faute de coordonnées');
+            ->assertSee('faute de coordonnées')
+            ->assertSee("n'a pas de coordonnées");
+    }
+
+    public function test_map_without_production_lot_does_not_break(): void
+    {
+        $shipment = $this->shipment($this->distributor, 'planned', '2026-10-17 08:00', 1000, [['van', 12]]);
+
+        $map = $shipment->fresh()->mapData();
+
+        $this->assertSame([], $map['markers']);
+        $this->assertSame(['Départ : aucun lot de production relié', 'Étape 1 : B1'], $map['missing']);
+        $this->actingAs($this->distributor)->get(route('pro.distributor.shipments.show', $shipment))
+            ->assertOk()
+            ->assertSee('Aucune position connue pour ce trajet');
     }
 }
