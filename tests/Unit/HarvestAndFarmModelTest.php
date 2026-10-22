@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Category;
 use App\Models\Farm;
 use App\Models\Harvest;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -53,6 +54,15 @@ class HarvestAndFarmModelTest extends TestCase
         $this->assertNull(Category::photoUrlFor('Safran'));
 
         $this->assertStringEndsWith('products/grenade.jpg', (new Harvest(['product_name' => 'Grenade']))->displayImageUrl());
+    }
+
+    public function test_missing_uploaded_file_falls_back_to_real_photo(): void
+    {
+        Storage::fake('public');
+        $harvest = (new Harvest(['product_name' => 'Tomate']))->forceFill(['image_path' => 'harvests/perdue.jpg']);
+
+        $this->assertNull($harvest->imageUrl());
+        $this->assertStringEndsWith('products/tomate.jpg', $harvest->displayImageUrl());
     }
 
     public function test_farm_total_production_and_yield(): void
