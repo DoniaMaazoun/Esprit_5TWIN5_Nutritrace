@@ -1,0 +1,86 @@
+# ==========================================================================
+# Render Blueprint — Nutritrace / Farm to Fork
+# Render → New → Blueprint → choisir ce dépôt. Deux services sont créés :
+#   1. nutritrace         : l'application monolithique (image construite depuis le Dockerfile)
+#   2. nutritrace-mysql   : la base MySQL 8 en conteneur Docker, avec disque persistant
+#
+# Le déploiement n'est PAS automatique sur chaque push : c'est le pipeline GitHub Actions
+# qui le déclenche (Deploy Hook) uniquement quand les tests et le build Docker ont réussi sur main.
+# ==========================================================================
+services:
+  - type: web
+    name: nutritrace
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: false
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: Farm to Fork
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false          # à saisir : résultat de « php artisan key:generate --show »
+      - key: APP_URL
+        sync: false          # à saisir : https://nutritrace.onrender.com (URL du service)
+      - key: APP_LOCALE
+        value: fr
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: nutritrace-mysql
+          property: host
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_DATABASE
+        value: farm_to_fork
+      - key: DB_USERNAME
+        value: nutritrace
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: nutritrace-mysql
+          envVarKey: MYSQL_PASSWORD
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: SEED_DEMO_DATA
+        value: "true"        # charge les comptes de démo au premier démarrage (base vide uniquement)
+      - key: AI_API_KEY
+        sync: false          # optionnel : clé Groq/OpenAI ; vide = moteur IA local
+
+  - type: pserv
+    name: nutritrace-mysql
+    runtime: image
+    image:
+      url: docker.io/library/mysql:8.0
+    plan: starter            # un disque persistant nécessite une offre payante
+    region: frankfurt
+    # Sous-dossier : le disque monté contient « lost+found », que MySQL refuse dans son dossier de données
+    dockerCommand: docker-entrypoint.sh mysqld --datadir=/var/lib/mysql/data --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+    envVars:
+      - key: MYSQL_DATABASE
+        value: farm_to_fork
+      - key: MYSQL_USER
+        value: nutritrace
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true

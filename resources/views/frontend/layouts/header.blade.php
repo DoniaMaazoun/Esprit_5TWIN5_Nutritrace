@@ -18,6 +18,8 @@
       ['frontend.contact', 'Contact', 'fa-envelope', [$route === 'frontend.contact']],
   ];
   $lookupError = $errors->getBag('lookup')->first('code');
+  // « Mon espace pro » : le distributeur arrive directement sur ses expéditions (Module 3)
+  $proSpaceUrl = $u?->isDistributor() ? route('pro.distributor.shipments.index') : route('pro.dashboard');
 @endphp
 
 <header class="ftn" id="ftn">
@@ -75,7 +77,7 @@
               <a class="dropdown-item" href="{{ route('pro.harvests.index') }}"><i class="fa-solid fa-boxes-stacked"></i> Mes récoltes</a>
               <a class="dropdown-item ftn__menu-cta" href="{{ route('pro.harvests.create') }}"><i class="fa-solid fa-plus"></i> Déclarer une récolte</a>
             @elseif($u->isPro() && $u->isApproved())
-              <a class="dropdown-item" href="{{ route('pro.dashboard') }}"><i class="fa-solid fa-briefcase"></i> Mon espace pro</a>
+              <a class="dropdown-item" href="{{ $proSpaceUrl }}"><i class="fa-solid fa-briefcase"></i> Mon espace pro</a>
             @else
               <a class="dropdown-item" href="{{ route('frontend.products') }}"><i class="fa-solid fa-basket-shopping"></i> Explorer les produits</a>
               <a class="dropdown-item" href="{{ route('farms.directory') }}"><i class="fa-solid fa-wheat-awn"></i> Découvrir les exploitations</a>
@@ -108,7 +110,7 @@
         @if($u->isAdmin())
           <a href="{{ route('backend.dashboard') }}" class="ftn-mobile__link"><i class="fa-solid fa-gauge-high"></i> Back-office</a>
         @elseif($u->isPro() && $u->isApproved())
-          <a href="{{ route('pro.dashboard') }}" class="ftn-mobile__link"><i class="fa-solid fa-gauge-high"></i> Mon espace</a>
+          <a href="{{ $proSpaceUrl }}" class="ftn-mobile__link"><i class="fa-solid fa-gauge-high"></i> Mon espace</a>
         @endif
       @else
         <div class="ftn-mobile__auth">

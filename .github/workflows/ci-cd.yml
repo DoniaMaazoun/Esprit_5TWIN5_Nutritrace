@@ -1,0 +1,302 @@
+# ==========================================================================
+# Pipeline CI/CD unique — Nutritrace / Farm to Fork (application monolithique Laravel)
+#
+#   1. Qualité      : validation composer, syntaxe PHP, style (Pint), audit de sécurité
+#   2. Tests        : tests unitaires + fonctionnels, sur SQLite et sur MySQL 8 (comme en production)
+#   3. Docker       : construction de l'image + test de fumée (app + MySQL via docker compose)
+#                     → publiée sur GitHub Container Registry pour la branche main
+#   4. Déploiement  : déclenche Render (Deploy Hook) puis vérifie que le site répond — main uniquement
+#
+# Chaque étape ne démarre que si la précédente a réussi.
+# ==========================================================================
+name: CI/CD
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.3'
+  PHP_EXTENSIONS: pdo_sqlite, sqlite3, pdo_mysql, mbstring, dom, gd, zip, intl, fileinfo, bcmath
+  AI_API_KEY: ''   # aucune clé IA en CI : les services IA passent en mode local
+
+jobs:
+  # ------------------------------------------------------------------------
+  quality:
+    name: 1 · Qualité du code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Installer PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Valider composer.json
+        run: composer validate --no-check-publish
+
+      - name: Installer les dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Vérifier la syntaxe PHP
+        run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+
+      - name: Style du code (Laravel Pint)
+        # Avertissement seulement (choix de l'équipe) : n'empêche pas la suite du pipeline
+        continue-on-error: true
+        run: vendor/bin/pint --test
+
+      - name: Audit de sécurité des dépendances
+        continue-on-error: true
+        run: composer audit --no-dev
+
+  # ------------------------------------------------------------------------
+  tests:
+    name: 2 · Tests (${{ matrix.database }})
+    needs: quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, mysql]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: nutritrace_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Installer PHP ${{ env.PHP_VERSION }} (+ couverture de code)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Installer les dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Préparer l'environnement
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Choisir la base de test (${{ matrix.database }})
+        run: |
+          if [ "${{ matrix.database }}" = "mysql" ]; then
+            {
+              echo "DB_CONNECTION=mysql"
+              echo "DB_HOST=127.0.0.1"
+              echo "DB_PORT=3306"
+              echo "DB_DATABASE=nutritrace_test"
+              echo "DB_USERNAME=root"
+              echo "DB_PASSWORD=root"
+            } >> "$GITHUB_ENV"
+          else
+            touch database/database.sqlite
+            echo "DB_CONNECTION=sqlite" >> "$GITHUB_ENV"
+            echo "DB_DATABASE=${GITHUB_WORKSPACE}/database/database.sqlite" >> "$GITHUB_ENV"
+          fi
+
+      - name: Vérifier que toutes les migrations passent (et se rejouent)
+        run: |
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php artisan migrate --force
+
+      - name: Lancer les tests unitaires et fonctionnels
+        run: >
+          php artisan test
+          --log-junit test-results-${{ matrix.database }}.xml
+          --coverage-clover coverage-${{ matrix.database }}.xml
+          --coverage-text
+
+      - name: Résumé des tests
+        if: always()
+        run: |
+          if [ -f test-results-${{ matrix.database }}.xml ]; then
+            php -r '$x = simplexml_load_file($argv[1]); $s = $x->testsuite;
+              printf("### Tests %s\n\n| Tests | Assertions | Échecs | Erreurs | Durée |\n|---|---|---|---|---|\n| %d | %d | %d | %d | %.1f s |\n",
+                $argv[2], $s["tests"], $s["assertions"], $s["failures"], $s["errors"], $s["time"]);' \
+              test-results-${{ matrix.database }}.xml ${{ matrix.database }} >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publier les rapports (JUnit + couverture)
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: rapports-tests-${{ matrix.database }}
+          path: |
+            test-results-${{ matrix.database }}.xml
+            coverage-${{ matrix.database }}.xml
+            storage/logs/*.log
+          if-no-files-found: ignore
+
+  # ------------------------------------------------------------------------
+  docker:
+    name: 3 · Image Docker
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/nutritrace
+      # Clé jetable, propre à ce test de fumée (conteneurs détruits à la fin du job)
+      APP_KEY: base64:B8cxQqgaYEJ43gpqWftuU1NGfhakD1lX7ne6uExinfM=
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Préparer Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construire l'image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: nutritrace-app:local
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test de fumée (application + MySQL avec docker compose)
+        run: |
+          docker compose --profile app up -d --no-build db app
+          echo "Attente de l'application..."
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/up > /dev/null; then echo "Application démarrée"; break; fi
+            sleep 3
+          done
+          curl -fsS http://localhost:8080/up > /dev/null
+          for page in / /products /exploitations /login /register; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080${page}")
+            echo "GET ${page} → ${code}"
+            [ "$code" = "200" ] || exit 1
+          done
+          # Les données de démo ont été chargées au premier démarrage
+          count=$(docker compose exec -T app php artisan tinker --execute='echo App\Models\Harvest::count();' | tr -dc '0-9')
+          echo "Produits en base : ${count}"
+          [ "${count:-0}" -gt 0 ]
+
+      - name: Journaux des conteneurs (en cas d'échec)
+        if: failure()
+        run: docker compose --profile app logs --no-color
+
+      - name: Arrêter les conteneurs
+        if: always()
+        run: docker compose --profile app down -v
+
+      - name: Connexion à GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publier l'image (latest + sha)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE_LC=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          for tag in latest "${GITHUB_SHA::7}"; do
+            docker tag nutritrace-app:local "${IMAGE_LC}:${tag}"
+            docker push "${IMAGE_LC}:${tag}"
+          done
+          echo "Image publiée : ${IMAGE_LC}:${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------------------------------------------------------------
+  deploy:
+    name: 4 · Déploiement Render
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.RENDER_APP_URL }}
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+      RENDER_APP_URL: ${{ vars.RENDER_APP_URL }}
+    steps:
+      - name: Déclencher le déploiement sur Render
+        id: trigger
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::warning::Secret RENDER_DEPLOY_HOOK_URL absent : déploiement ignoré (voir DEPLOIEMENT.md)."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          response=$(curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}")
+          echo "Réponse Render : $response"
+          deploy_id=$(echo "$response" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+          echo "deploy_id=${deploy_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Suivre le déploiement (API Render)
+        if: steps.trigger.outputs.skipped != 'true' && env.RENDER_API_KEY != '' && env.RENDER_SERVICE_ID != '' && steps.trigger.outputs.deploy_id != ''
+        run: |
+          url="https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys/${{ steps.trigger.outputs.deploy_id }}"
+          for i in $(seq 1 60); do
+            status=$(curl -fsS -H "Authorization: Bearer ${RENDER_API_KEY}" "$url" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')
+            echo "Statut du déploiement : ${status}"
+            case "$status" in
+              live) exit 0 ;;
+              build_failed|update_failed|canceled|deactivated) echo "::error::Déploiement Render en échec (${status})"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Délai dépassé en attendant le déploiement"; exit 1
+
+      - name: Vérifier que le site répond
+        if: steps.trigger.outputs.skipped != 'true' && env.RENDER_APP_URL != ''
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS "${RENDER_APP_URL}/up" > /dev/null; then
+              echo "Site en ligne : ${RENDER_APP_URL}" | tee -a "$GITHUB_STEP_SUMMARY"
+              curl -fsS -o /dev/null "${RENDER_APP_URL}/products"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Le site ne répond pas sur ${RENDER_APP_URL}/up"; exit 1

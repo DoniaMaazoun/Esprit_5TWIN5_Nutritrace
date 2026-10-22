@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render (et tout reverse-proxy) termine le HTTPS : on fait confiance aux en-têtes X-Forwarded-*
+        // pour que url(), asset() et les redirections génèrent bien des liens en https.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'pro' => \App\Http\Middleware\ProMiddleware::class,
