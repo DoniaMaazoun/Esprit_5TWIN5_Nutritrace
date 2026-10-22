@@ -10,15 +10,18 @@ use Symfony\Component\HttpFoundation\Response;
 class ShipmentPdfController extends Controller
 {
     /**
-     * Rapport de traçabilité d'une expédition en PDF (lot lié, étapes, journal, CO2)
+     * Rapport de traçabilité d'une expédition en PDF (lot de production, origine, étapes, journal, CO2)
      */
     public function __invoke(Shipment $shipment): Response
     {
         abort_if($shipment->user_id !== auth()->id(), 403);
 
-        $shipment->load(['user', 'harvest.farm', 'harvest.category', 'pointOfSale', 'legs.transportMode', 'events']);
+        $shipment->load(['user', 'productionLot.recipe.items', 'productionLot.processor', 'pointOfSale', 'legs.transportMode', 'events']);
 
-        return Pdf::loadView('pro.distributor.shipments.pdf', ['shipment' => $shipment])
+        return Pdf::loadView('pro.distributor.shipments.pdf', [
+            'shipment' => $shipment,
+            'originHarvests' => $shipment->originHarvests(),
+        ])
             ->setPaper('a4')
             ->download("rapport-tracabilite-{$shipment->reference}.pdf");
     }

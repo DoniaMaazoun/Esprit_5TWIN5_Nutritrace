@@ -1,4 +1,4 @@
-{{-- Carte Leaflet du trajet : départ (ferme du lot), étapes colorées par mode, destination --}}
+{{-- Carte Leaflet du trajet : départ (site du transformateur), étapes colorées par mode, destination --}}
 @php($map = $shipment->mapData())
 
 <div class="card distributor-card mb-4">
@@ -6,7 +6,7 @@
   <div class="card-body">
     @if(count($map['markers']) === 0)
       <div class="alert alert-info mb-0">
-        Aucune position connue pour ce trajet : ajoutez les coordonnées d'arrivée des étapes, ou géolocalisez la ferme du lot et le point de vente.
+        Aucune position connue pour ce trajet : ajoutez les coordonnées d'arrivée des étapes et du point de vente. Le départ (site du transformateur) n'est affiché que s'il est géolocalisé.
       </div>
     @else
       <div id="shipment-map" style="height: 380px; border-radius: 0.75rem;"></div>
@@ -23,7 +23,7 @@
     @if(count($map['missing']) > 0)
       <div class="alert alert-warning small mt-3 mb-0">
         <i class="fa-solid fa-circle-info"></i> Non placé(s) sur la carte, faute de coordonnées :
-        {{ implode(' · ', $map['missing']) }}. Renseignez la latitude et la longitude d'arrivée en modifiant l'étape.
+        {{ implode(' · ', $map['missing']) }}. Pour une étape, renseignez la latitude et la longitude d'arrivée en la modifiant.
       </div>
     @endif
   </div>

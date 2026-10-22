@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Shipment extends Model
 {
     protected $fillable = [
         'reference',
         'user_id',
-        'harvest_id',
+        'production_lot_id',
         'product_name',
         'weight_kg',
         'origin_address',
@@ -70,11 +71,49 @@ class Shipment extends Model
     }
 
     /**
-     * Lot transporté, déclaré par un producteur (module 1)
+     * Lot transporté : produit fini d'un transformateur (module 2)
      */
-    public function harvest(): BelongsTo
+    public function productionLot(): BelongsTo
     {
-        return $this->belongsTo(Harvest::class);
+        return $this->belongsTo(ProductionLot::class);
+    }
+
+    /**
+     * Récoltes d'origine probables du lot de production.
+     *
+     * Le module 2 n'enregistre pas quelles réceptions ont servi à fabriquer un lot : on les déduit
+     * comme le fait le transformateur lors de la déduction du stock, en associant chaque ingrédient
+     * de la recette (raw_material_name) aux réceptions acceptées du même transformateur dont la
+     * récolte porte ce nom, reçues au plus tard le jour de production.
+     *
+     * @return Collection<int, Harvest>
+     */
+    public function originHarvests(): Collection
+    {
+        $lot = $this->productionLot;
+        if (! $lot) {
+            return collect();
+        }
+
+        $names = $lot->recipe?->items->pluck('raw_material_name')
+            ->map(fn ($name) => mb_strtolower(trim($name)))->filter()->unique()->values()->all() ?? [];
+        if ($names === []) {
+            return collect();
+        }
+
+        return RawMaterialReception::where('processor_id', $lot->processor_id)
+            ->where('status', 'received')
+            ->when($lot->production_date, fn ($q, $date) => $q->whereDate('reception_date', '<=', $date))
+            ->whereHas('harvest', fn ($q) => $q->whereRaw(
+                'LOWER(product_name) IN ('.implode(', ', array_fill(0, count($names), '?')).')',
+                $names
+            ))
+            ->with('harvest.farm', 'harvest.category')
+            ->get()
+            ->pluck('harvest')
+            ->filter()
+            ->unique('id')
+            ->values();
     }
 
     /**
@@ -116,25 +155,28 @@ class Shipment extends Model
     ];
 
     /**
-     * Données de la carte Leaflet : départ (ferme du lot), arrivée de chaque étape,
-     * destination (point de vente). Une étape sans coordonnées n'est pas tracée.
+     * Données de la carte Leaflet : départ (site du transformateur du lot), arrivée de chaque étape,
+     * destination (point de vente). Un point sans coordonnées n'est pas tracé mais signalé.
      *
      * @return array{markers: array, segments: array, missing: array<int, string>}
      */
     public function mapData(): array
     {
-        $this->loadMissing(['harvest.farm', 'pointOfSale', 'legs.transportMode']);
+        $this->loadMissing(['productionLot.processor', 'pointOfSale', 'legs.transportMode']);
 
         $markers = [];
         $segments = [];
         $missing = [];
 
-        $farm = $this->harvest?->farm;
-        $previous = $farm?->hasLocation() ? [(float) $farm->latitude, (float) $farm->longitude] : null;
+        $processor = $this->productionLot?->processor;
+        $previous = $this->processorLocation();
         if ($previous) {
-            $markers[] = ['position' => $previous, 'type' => 'start', 'label' => "Départ : {$this->origin_address} ({$farm->name})"];
+            $site = $processor->company_name ?: $processor->name;
+            $markers[] = ['position' => $previous, 'type' => 'start', 'label' => "Départ : {$this->origin_address} ({$site})"];
+        } elseif ($processor) {
+            $missing[] = 'Départ : le transformateur '.($processor->company_name ?: $processor->name).' n\'a pas de coordonnées';
         } elseif ($this->legs->isNotEmpty()) {
-            $missing[] = 'Départ : lot sans ferme géolocalisée';
+            $missing[] = 'Départ : aucun lot de production relié';
         }
 
         $pos = $this->pointOfSale;
@@ -178,6 +220,21 @@ class Shipment extends Model
         }
 
         return ['markers' => $markers, 'segments' => $segments, 'missing' => $missing];
+    }
+
+    /**
+     * Coordonnées du site du transformateur, si le module 2 en fournit un jour
+     * (colonnes latitude / longitude sur l'utilisateur). Aucune erreur si elles n'existent pas.
+     *
+     * @return array{0: float, 1: float}|null
+     */
+    public function processorLocation(): ?array
+    {
+        $attributes = $this->productionLot?->processor?->getAttributes() ?? [];
+        $lat = $attributes['latitude'] ?? null;
+        $lng = $attributes['longitude'] ?? null;
+
+        return is_numeric($lat) && is_numeric($lng) ? [(float) $lat, (float) $lng] : null;
     }
 
     public function getStatusLabel(): string

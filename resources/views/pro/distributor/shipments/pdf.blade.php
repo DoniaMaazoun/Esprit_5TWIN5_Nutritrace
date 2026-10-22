@@ -26,6 +26,7 @@
 </head>
 <body>
   @php($n = fn ($v, $d = 2) => number_format((float) $v, $d, ',', ' '))
+  @php($originHarvests ??= $shipment->originHarvests())
 
   <div class="header">
     <h1>Rapport de traçabilité · {{ $shipment->reference }}</h1>
@@ -49,20 +50,43 @@
     </td></tr>
   </table>
 
-  <h2>Lot lié (producteur)</h2>
-  @if($shipment->harvest)
+  <h2>Lot de production</h2>
+  @if($lot = $shipment->productionLot)
     <table class="info">
-      <tr><td>Code du lot</td><td>{{ $shipment->harvest->batch_code }}</td></tr>
-      <tr><td>Produit</td><td>
-        {{ $shipment->harvest->product_name }}
-        @if($shipment->harvest->variety) ({{ $shipment->harvest->variety }}) @endif
-        @if($shipment->harvest->category) · {{ $shipment->harvest->category->name }} @endif
-      </td></tr>
-      <tr><td>Récolté le</td><td>{{ $shipment->harvest->harvest_date->format('d/m/Y') }} · qualité {{ $shipment->harvest->quality_grade }}</td></tr>
-      <tr><td>Ferme</td><td>{{ $shipment->harvest->farm->name }}, {{ $shipment->harvest->farm->city }} ({{ $shipment->harvest->farm->governorate }})</td></tr>
+      <tr><td>Code du lot</td><td>{{ $lot->qr_code_data ?? 'Lot #'.$lot->id }}</td></tr>
+      <tr><td>Produit fini</td><td>{{ $lot->getProductName() }} · {{ $lot->getQuantityDisplay() }}</td></tr>
+      <tr><td>Transformateur</td><td>{{ $lot->processor->company_name ?: $lot->processor->name }}</td></tr>
+      <tr><td>Produit le</td><td>{{ $lot->production_date->format('d/m/Y') }} · à consommer avant le {{ $lot->expiry_date->format('d/m/Y') }}</td></tr>
+      @if($lot->recipe?->items->isNotEmpty())
+        <tr><td>Ingrédients</td><td>{{ $lot->recipe->items->map(fn ($item) => $item->raw_material_name.' ('.$item->getQuantityDisplay().')')->implode(', ') }}</td></tr>
+      @endif
     </table>
+
+    <h2>Traçabilité jusqu'à la récolte</h2>
+    @if($originHarvests->isNotEmpty())
+      <table>
+        <thead><tr><th>Lot récolte</th><th>Produit</th><th>Récolté le</th><th>Ferme</th></tr></thead>
+        <tbody>
+          @foreach($originHarvests as $harvest)
+            <tr>
+              <td>{{ $harvest->batch_code }}</td>
+              <td>
+                {{ $harvest->product_name }}
+                @if($harvest->variety) ({{ $harvest->variety }}) @endif
+                @if($harvest->category) · {{ $harvest->category->name }} @endif
+              </td>
+              <td>{{ $harvest->harvest_date->format('d/m/Y') }} · qualité {{ $harvest->quality_grade }}</td>
+              <td>{{ $harvest->farm->name }}, {{ $harvest->farm->city }} ({{ $harvest->farm->governorate }})</td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+      <p class="muted">Origine déduite des réceptions de matières premières du transformateur correspondant aux ingrédients de la recette.</p>
+    @else
+      <p class="muted">Récolte d'origine non retrouvée pour ce lot.</p>
+    @endif
   @else
-    <p class="muted">Aucun lot producteur relié à cette expédition.</p>
+    <p class="muted">Aucun lot de production relié à cette expédition.</p>
   @endif
 
   <h2>Empreinte carbone</h2>

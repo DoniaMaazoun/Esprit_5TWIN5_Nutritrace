@@ -19,7 +19,31 @@
           <dt class="col-sm-5">Distributeur</dt>
           <dd class="col-sm-7">{{ $shipment->user->company_name ?? $shipment->user->name }}</dd>
           <dt class="col-sm-5">Produit</dt>
-          <dd class="col-sm-7">{{ $shipment->product_name }}@if($shipment->harvest) (lot <a href="{{ route('backend.products.edit', $shipment->harvest) }}">{{ $shipment->harvest->batch_code }}</a>)@endif</dd>
+          <dd class="col-sm-7">{{ $shipment->product_name }}</dd>
+          <dt class="col-sm-5">Lot de production</dt>
+          <dd class="col-sm-7">
+            @if($lot = $shipment->productionLot)
+              @if($lot->qr_code_data)
+                <a href="{{ route('traceability.show', $lot->qr_code_data) }}" target="_blank">{{ $lot->qr_code_data }}</a>
+              @else
+                Lot #{{ $lot->id }}
+              @endif
+              · {{ $lot->getProductName() }}<br>
+              <small class="text-muted">{{ $lot->processor->company_name ?: $lot->processor->name }} · produit le {{ $lot->production_date->format('d/m/Y') }}</small>
+            @else
+              —
+            @endif
+          </dd>
+          @if($shipment->productionLot)
+            <dt class="col-sm-5">Origine (récolte)</dt>
+            <dd class="col-sm-7">
+              @forelse($originHarvests as $harvest)
+                <a href="{{ route('backend.products.edit', $harvest) }}">{{ $harvest->batch_code }}</a> · {{ $harvest->product_name }} ({{ $harvest->farm->name }})<br>
+              @empty
+                <span class="text-muted">Non retrouvée</span>
+              @endforelse
+            </dd>
+          @endif
           <dt class="col-sm-5">Poids</dt>
           <dd class="col-sm-7">{{ number_format($shipment->weight_kg, 2, ',', ' ') }} kg</dd>
           <dt class="col-sm-5">Départ</dt>

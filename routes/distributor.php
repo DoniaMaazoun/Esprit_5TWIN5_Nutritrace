@@ -6,7 +6,6 @@ use App\Http\Controllers\Distributor\CarbonDashboardController;
 use App\Http\Controllers\Distributor\PointOfSaleController;
 use App\Http\Controllers\Distributor\ShipmentController;
 use App\Http\Controllers\Distributor\ShipmentEventController;
-use App\Http\Controllers\Distributor\ShipmentLegController;
 use App\Http\Controllers\Distributor\ShipmentPdfController;
 use App\Http\Controllers\Distributor\TransportRecommendationController;
 use App\Http\Middleware\DistributorMiddleware;
@@ -28,20 +27,20 @@ Route::prefix('pro/distributor')->name('pro.distributor.')->middleware(['auth', 
     Route::resource('points-of-sale', PointOfSaleController::class)
         ->parameters(['points-of-sale' => 'pointOfSale']);
 
-    // Expéditions
-    Route::resource('shipments', ShipmentController::class);
+    // Recommandation IA du mode de transport, utilisable avant l'enregistrement de l'expédition
+    Route::post('shipments/transport-recommendation', TransportRecommendationController::class)
+        ->name('shipments.transport-recommendation');
 
-    // Étapes de transport et journal, rattachés à une expédition
+    // Expéditions : création et modification en une page, étapes de transport comprises
+    Route::resource('shipments', ShipmentController::class);
+    Route::patch('shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])
+        ->name('shipments.status');
+
+    // Journal de traçabilité, rempli pendant le suivi de l'expédition
     Route::scopeBindings()->group(function () {
-        Route::resource('shipments.legs', ShipmentLegController::class)
-            ->only(['store', 'edit', 'update', 'destroy']);
         Route::resource('shipments.events', ShipmentEventController::class)
             ->only(['store', 'edit', 'update', 'destroy']);
     });
-
-    // Recommandation IA du mode de transport
-    Route::post('shipments/{shipment}/transport-recommendation', TransportRecommendationController::class)
-        ->name('shipments.transport-recommendation');
 
     // Rapport de traçabilité PDF
     Route::get('shipments/{shipment}/pdf', ShipmentPdfController::class)->name('shipments.pdf');
