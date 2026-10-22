@@ -52,9 +52,9 @@
       <h2 class="section-title"><i class="fa-solid fa-info-circle"></i> Informations Générales</h2>
 
       <div class="mb-3">
-        <label class="form-label" for="name">Nom de la Recette *</label>
+        <label class="form-label" for="name">Nom de la Recette</label>
         <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" 
-          value="{{ old('name', $recipe->name) }}" required>
+          value="{{ old('name', $recipe->name) }}">
         @error('name') <span class="error-message">{{ $message }}</span> @enderror
       </div>
 
@@ -67,15 +67,16 @@
 
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="yield_quantity">Quantité Produite *</label>
+          <label class="form-label" for="yield_quantity">Quantité Produite</label>
           <input type="number" id="yield_quantity" name="yield_quantity" class="form-control @error('yield_quantity') is-invalid @enderror" 
-            step="0.01" value="{{ old('yield_quantity', $recipe->yield_quantity) }}" required>
+            step="0.01" value="{{ old('yield_quantity', $recipe->yield_quantity) }}">
           @error('yield_quantity') <span class="error-message">{{ $message }}</span> @enderror
         </div>
 
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="yield_unit">Unité *</label>
-          <select id="yield_unit" name="yield_unit" class="form-select @error('yield_unit') is-invalid @enderror" required>
+          <label class="form-label" for="yield_unit">Unité</label>
+          <select id="yield_unit" name="yield_unit" class="form-select @error('yield_unit') is-invalid @enderror">
+            <option value="">-- Choisir --</option>
             <option value="kg" {{ old('yield_unit', $recipe->yield_unit) == 'kg' ? 'selected' : '' }}>Kilogrammes (kg)</option>
             <option value="g" {{ old('yield_unit', $recipe->yield_unit) == 'g' ? 'selected' : '' }}>Grammes (g)</option>
             <option value="quintal" {{ old('yield_unit', $recipe->yield_unit) == 'quintal' ? 'selected' : '' }}>Quintaux (q)</option>
@@ -89,9 +90,9 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="preparation_time_minutes">Temps de Préparation (minutes) *</label>
+        <label class="form-label" for="preparation_time_minutes">Temps de Préparation (minutes)</label>
         <input type="number" id="preparation_time_minutes" name="preparation_time_minutes" class="form-control @error('preparation_time_minutes') is-invalid @enderror" 
-          value="{{ old('preparation_time_minutes', $recipe->preparation_time_minutes) }}" min="0" required>
+          value="{{ old('preparation_time_minutes', $recipe->preparation_time_minutes) }}">
         @error('preparation_time_minutes') <span class="error-message">{{ $message }}</span> @enderror
       </div>
 
@@ -103,7 +104,8 @@
       </div>
 
       <div class="form-check mb-0">
-        <input type="checkbox" id="isActive" name="is_active" class="form-check-input" 
+        <input type="hidden" name="is_active" value="0">
+        <input type="checkbox" id="isActive" name="is_active" value="1" class="form-check-input" 
           {{ old('is_active', $recipe->is_active) ? 'checked' : '' }}>
         <label for="isActive" class="form-check-label">Recette active</label>
       </div>
@@ -127,7 +129,7 @@
             <div class="ingredient-grid">
               <div>
                 <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
-                <select name="items[{{ $index }}][raw_material_name]" class="form-select" required>
+                <select name="items[{{ $index }}][raw_material_name]" class="form-select">
                   <option value="">-- Sélectionner une matière brute --</option>
                   @foreach($receivedMaterials as $material)
                     <option value="{{ $material->product_name }}" {{ $item->raw_material_name == $material->product_name ? 'selected' : '' }}>
@@ -138,10 +140,10 @@
               </div>
               <div>
                 <input type="number" name="items[{{ $index }}][quantity_required]" 
-                  class="form-control" step="0.01" value="{{ $item->quantity_required }}" placeholder="Qté" required>
+                  class="form-control" step="0.01" value="{{ $item->quantity_required }}" placeholder="Qté">
               </div>
               <div>
-                <select name="items[{{ $index }}][unit]" class="form-select" required>
+                <select name="items[{{ $index }}][unit]" class="form-select">
                   <option value="kg" {{ $item->unit == 'kg' ? 'selected' : '' }}>kg</option>
                   <option value="g" {{ $item->unit == 'g' ? 'selected' : '' }}>g</option>
                   <option value="quintal" {{ $item->unit == 'quintal' ? 'selected' : '' }}>q</option>
@@ -197,16 +199,16 @@ function addIngredient() {
   newIngredient.innerHTML = `
     <div class="ingredient-grid">
       <div>
-        <select name="items[${ingredientCount}][raw_material_name]" class="form-select" required>
+        <select name="items[${ingredientCount}][raw_material_name]" class="form-select">
           ${optionsHTML}
         </select>
       </div>
       <div>
         <input type="number" name="items[${ingredientCount}][quantity_required]" 
-          class="form-control" step="0.01" placeholder="Qté" required>
+          class="form-control" step="0.01" placeholder="Qté">
       </div>
       <div>
-        <select name="items[${ingredientCount}][unit]" class="form-select" required>
+        <select name="items[${ingredientCount}][unit]" class="form-select">
           <option value="kg">kg</option>
           <option value="g">g</option>
           <option value="quintal">q</option>

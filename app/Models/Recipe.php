@@ -46,6 +46,14 @@ class Recipe extends Model
     }
 
     /**
+     * Relation: Recette a plusieurs lots de production
+     */
+    public function productionLots(): HasMany
+    {
+        return $this->hasMany(ProductionLot::class);
+    }
+
+    /**
      * Scope: Recettes d'un transformateur spécifique
      */
     public function scopeOwnedBy(Builder $query, User $user): Builder

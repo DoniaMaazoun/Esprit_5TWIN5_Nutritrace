@@ -63,7 +63,10 @@ Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function 
             Route::delete('/{reception}', 'destroy')->name('destroy');
         });
 
-        // Module 2 (Transformateur/Processor) : Gestion des Recettes & Ingrédients
+    // Module 2 (Transformateur/Processor) : Gestion des Recettes & Ingrédients
+        // AI: Generate recipe content (MUST be before resource route)
+        Route::post('processor/recipes/ai/generate', [App\Http\Controllers\Pro\AiController::class, 'generateRecipeContent'])->name('processor.recipes.ai.generate');
+
         Route::resource('processor/recipes', App\Http\Controllers\Pro\ProcessorRecipeController::class, [
             'names' => [
                 'index' => 'processor.recipes.index',
@@ -78,6 +81,18 @@ Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function 
                 'recipe' => 'recipe',
             ]
         ]);
+
+        // Module 3 (Transformateur/Processor) : Gestion des Lots de Production & Traçabilité
+        Route::prefix('processor/production-lots')->name('processor.production-lots.')->controller(App\Http\Controllers\Pro\ProcessorProductionLotController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{production_lot}', 'show')->name('show');
+            Route::get('/{production_lot}/edit', 'edit')->name('edit');
+            Route::put('/{production_lot}', 'update')->name('update');
+            Route::delete('/{production_lot}', 'destroy')->name('destroy');
+            Route::get('/{production_lot}/qr-code', 'generateQrCode')->name('qr-code');
+        });
     });
 
     // Module 1 (Producteur) : Gestion des Exploitations & Origine des Récoltes

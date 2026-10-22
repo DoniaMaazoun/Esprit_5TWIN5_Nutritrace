@@ -284,7 +284,7 @@
     <button class="active"><i class="fa-solid fa-chart-line"></i> Tableau de Bord</button>
     <a href="{{ route('pro.processor.raw-materials.index') }}"><i class="fa-solid fa-inbox"></i> Réceptions</a>
     <a href="{{ route('pro.processor.recipes.index') }}"><i class="fa-solid fa-gears"></i> Recettes</a>
-    <a href="#"><i class="fa-solid fa-box"></i> Production</a>
+    <a href="{{ route('pro.processor.production-lots.index') }}"><i class="fa-solid fa-box"></i> Production</a>
   </div>
 
   @if(session('error'))
@@ -368,13 +368,83 @@
         <p class="step-description">
           Lancez des lots de fabrication, déduisez les stocks, gérez les emballages et générez les QR codes de traçabilité pour chaque produit.
         </p>
-        <button class="step-button" disabled title="Fonctionnalité à venir" style="opacity: .6; cursor: not-allowed;">
-          <i class="fa-solid fa-lock"></i> À venir
-        </button>
-        <span class="step-badge"><i class="fa-solid fa-hourglass"></i> Étape 3</span>
+        <a href="{{ route('pro.processor.production-lots.index') }}" class="step-button">
+          <i class="fa-solid fa-arrow-right"></i> Accéder
+        </a>
+        <span class="step-badge"><i class="fa-solid fa-check"></i> Étape 3</span>
       </div>
     </div>
   </div>
+
+  <!-- IA Assistant & Waste Prevention -->
+  @if($proType === 'processor' && $wastePreventionRecommendation)
+    <div style="margin-top: 40px; padding: 24px; background: linear-gradient(135deg, rgba(45,106,79,.1), rgba(45,106,79,.05)); border-left: 4px solid var(--processor-primary); border-radius: 12px;">
+      <h3 style="margin: 0 0 16px; display: flex; align-items: center; gap: 10px; color: var(--processor-primary); font-size: 1.2rem; font-weight: 700;">
+        <i class="fa-solid fa-robot"></i> Assistant IA & Prévention Anti-Gaspillage
+      </h3>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <!-- Recommendation Card -->
+        <div style="background: #fff; padding: 16px; border-radius: 8px; border: 1px solid var(--processor-primary);">
+          <p style="margin: 0 0 12px; font-weight: 600; color: var(--processor-primary); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-lightbulb"></i> Recommandation Prioritaire
+          </p>
+          <p style="margin: 0 0 8px; font-size: 1.1rem; font-weight: 700; color: #333;">
+            {{ $wastePreventionRecommendation['recipe_name'] }}
+          </p>
+          <p style="margin: 0 0 12px; font-size: 0.9rem; color: #666;">
+            Utilise <strong>{{ $wastePreventionRecommendation['matching_ingredients_count'] }}/{{ $wastePreventionRecommendation['total_ingredients'] }}</strong> ingrédients qui expirent bientôt
+          </p>
+
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+            <p style="margin: 0 0 8px; font-size: 0.85rem; font-weight: 600; color: #666;">Matières proches de péremption:</p>
+            @foreach($wastePreventionRecommendation['expiring_materials'] as $mat)
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #333; margin-bottom: 4px;">
+                <span><strong>{{ $mat['name'] }}</strong></span>
+                <span style="color: @if($mat['days_until_expiry'] <= 3) #dc3545 @else #ffc107 @endif; font-weight: 600;">
+                  {{ $mat['days_until_expiry'] }} jour{{ $mat['days_until_expiry'] > 1 ? 's' : '' }}
+                </span>
+              </div>
+            @endforeach
+          </div>
+
+          <a href="{{ route('pro.processor.production-lots.create') }}" class="btn btn-sm" style="background: var(--processor-primary); color: white; border: none;">
+            <i class="fa-solid fa-plus"></i> Créer un Lot avec Cette Recette
+          </a>
+        </div>
+
+        <!-- Waste Impact -->
+        <div style="background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #ffc107;">
+          <p style="margin: 0 0 12px; font-weight: 600; color: #856404; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-leaf"></i> Impact Environnemental
+          </p>
+
+          <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <div style="text-align: center;">
+              <div style="font-size: 2.5rem; font-weight: 700; color: @if($wastePreventionRecommendation['urgency'] === 'critical') #dc3545 @else #ffc107 @endif;">
+                {{ $wastePreventionRecommendation['match_percentage'] }}%
+              </div>
+              <p style="margin: 0; font-size: 0.9rem; color: #666;">de correspondance recette-stocks</p>
+            </div>
+          </div>
+
+          <p style="margin: 0 0 12px; font-size: 0.9rem; color: #333;">
+            @if($wastePreventionRecommendation['urgency'] === 'critical')
+              <i class="fa-solid fa-exclamation-triangle" style="color: #dc3545;"></i>
+              <strong>Urgence CRITIQUE :</strong> Réduisez le gaspillage en produisant cette recette dans les prochains jours.
+            @else
+              <i class="fa-solid fa-hourglass-half" style="color: #ffc107;"></i>
+              <strong>Urgence HAUTE :</strong> Priorité à cette production pour optimiser vos stocks.
+            @endif
+          </p>
+
+          <p style="margin: 0; font-size: 0.85rem; color: #666; line-height: 1.6;">
+            Produire maintenant éviterait des pertes estimées et valorisera vos matières premières, tout en réduisant l'impact environnemental du gaspillage.
+          </p>
+        </div>
+      </div>
+    </div>
+  @endif
 
   <!-- Stats Summary -->
   <div class="stats-section">
@@ -389,11 +459,11 @@
         <div class="stat-label">Recettes Créées</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value">0</div>
+        <div class="stat-value">{{ $dashboardKpis['production_this_month'] ?? 0 }}</div>
         <div class="stat-label">Lots en Production</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value">0</div>
+        <div class="stat-value">{{ $dashboardKpis['total_production_lots'] ?? 0 }}</div>
         <div class="stat-label">Produits Finis</div>
       </div>
     </div>
