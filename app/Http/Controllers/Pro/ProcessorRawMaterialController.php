@@ -16,19 +16,42 @@ class ProcessorRawMaterialController extends Controller
     /**
      * Show list of available harvests for reception
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
 
-        // Get all available harvests (status: in_stock) with pagination
-        $availableHarvests = Harvest::where('status', 'in_stock')
-            ->with('farm.user', 'category')
-            ->paginate(4);
+        // Get filters from request
+        $searchQuery = $request->get('search', '');
+        $filterStatus = $request->get('filter_status', 'all'); // 'all', 'registered', 'not_registered'
 
         // Get already registered harvest IDs for this processor
         $registeredHarvestIds = RawMaterialReception::where('processor_id', $user->id)
             ->pluck('harvest_id')
             ->toArray();
+
+        // Build query for available harvests
+        $query = Harvest::where('status', 'in_stock')
+            ->with('farm.user', 'category');
+
+        // Apply search filter
+        if (!empty($searchQuery)) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('product_name', 'like', "%{$searchQuery}%")
+                  ->orWhere('variety', 'like', "%{$searchQuery}%")
+                  ->orWhere('batch_code', 'like', "%{$searchQuery}%")
+                  ->orWhereHas('farm', fn ($q) => $q->where('name', 'like', "%{$searchQuery}%"))
+                  ->orWhereHas('farm.user', fn ($q) => $q->where('company_name', 'like', "%{$searchQuery}%"));
+            });
+        }
+
+        // Apply registration status filter
+        if ($filterStatus === 'registered') {
+            $query->whereIn('id', $registeredHarvestIds);
+        } elseif ($filterStatus === 'not_registered') {
+            $query->whereNotIn('id', $registeredHarvestIds);
+        }
+
+        $availableHarvests = $query->paginate(4)->withQueryString();
 
         // Get all receptions for this processor
         $receptions = RawMaterialReception::where('processor_id', $user->id)
@@ -57,6 +80,8 @@ class ProcessorRawMaterialController extends Controller
             'registeredHarvestIds' => $registeredHarvestIds,
             'receptions' => $receptions,
             'stats' => $stats,
+            'searchQuery' => $searchQuery,
+            'filterStatus' => $filterStatus,
         ]);
     }
 

@@ -201,6 +201,160 @@ Génère une vraie recette professionnelle réaliste. Fournis en JSON valide (au
     }
 
     /**
+     * Recommend waste prevention recipes using OpenAI
+     * Analyzes expiring materials and generates recipe recommendations
+     */
+    public function recommendWastePreventionRecipes(array $expiringMaterials): ?array
+    {
+        if (empty($expiringMaterials)) {
+            return null;
+        }
+
+        $apiKey = config('services.openai.key');
+        if (!$apiKey) {
+            return $this->generateFallbackWastePreventionRecipe($expiringMaterials);
+        }
+
+        try {
+            // Format materials for the prompt
+            $materialsDescription = collect($expiringMaterials)
+                ->map(fn ($mat) => "{$mat['name']}: {$mat['quantity']} kg (expiration dans {$mat['days_until_expiry']} jours)")
+                ->join("\n- ");
+
+            $prompt = "Tu es un expert en transformation agroalimentaire spécialisé dans la prévention du gaspillage alimentaire.
+
+Voici des matières premières qui vont bientôt expirer:
+- $materialsDescription
+
+Propose UNE recette prioritaire pour utiliser ces matières avant expiration. Retourne UNIQUEMENT un JSON valide, sans aucun texte avant ou après:
+
+{
+  \"recipe_name\": \"Nom de la recette (ex: Sauce Tomate Concentrée)\",
+  \"justification\": \"Raison écologique et économique de cette recette (1 phrase)\",
+  \"ingredients_to_prioritize\": [
+    \"Ingrédient 1 de la liste fournie\",
+    \"Ingrédient 2 de la liste fournie\"
+  ],
+  \"urgency\": \"critical|high|medium\",
+  \"estimated_quantity\": \"Quantité estimée du produit fini (ex: 50 kg de sauce)\",
+  \"processing_time_hours\": 4,
+  \"estimated_shelf_life_days\": 90
+}";
+
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$apiKey}",
+                'Content-Type' => 'application/json',
+            ])->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-3.5-turbo',
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'Tu es un expert en agroalimentaire et prévention du gaspillage. Tu réponds TOUJOURS et UNIQUEMENT en JSON valide, sans aucun texte avant ou après.',
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+                'temperature' => 0.7,
+                'max_tokens' => 600,
+            ]);
+
+            if ($response->successful()) {
+                $content = $response->json('choices.0.message.content');
+                
+                // Clean up response
+                $content = preg_replace('/```json\s*/i', '', $content);
+                $content = preg_replace('/```\s*/i', '', $content);
+                $content = trim($content);
+                
+                $data = json_decode($content, true);
+
+                if (is_array($data) && isset($data['recipe_name']) && isset($data['justification'])) {
+                    return [
+                        'recipe_name' => $data['recipe_name'],
+                        'justification' => $data['justification'],
+                        'ingredients_to_prioritize' => $data['ingredients_to_prioritize'] ?? [],
+                        'urgency' => $data['urgency'] ?? 'high',
+                        'estimated_quantity' => $data['estimated_quantity'] ?? 'À définir',
+                        'processing_time_hours' => $data['processing_time_hours'] ?? 4,
+                        'estimated_shelf_life_days' => $data['estimated_shelf_life_days'] ?? 90,
+                        'from_ai' => true,
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('AI Waste Prevention Recommendation Error: ' . $e->getMessage());
+        }
+
+        // Fallback if API fails
+        return $this->generateFallbackWastePreventionRecipe($expiringMaterials);
+    }
+
+    /**
+     * Generate fallback waste prevention recipe recommendation
+     */
+    private function generateFallbackWastePreventionRecipe(array $expiringMaterials): ?array
+    {
+        if (empty($expiringMaterials)) {
+            return null;
+        }
+
+        // Sort by urgency
+        usort($expiringMaterials, fn ($a, $b) => $a['days_until_expiry'] <=> $b['days_until_expiry']);
+
+        $urgentMaterial = $expiringMaterials[0];
+        $daysUrgent = $urgentMaterial['days_until_expiry'];
+        $urgency = $daysUrgent <= 2 ? 'critical' : ($daysUrgent <= 5 ? 'high' : 'medium');
+
+        // Generate recipe suggestions based on material type
+        $materialName = strtolower($urgentMaterial['name']);
+        
+        if (str_contains($materialName, 'tomate')) {
+            return [
+                'recipe_name' => 'Sauce Tomate Concentrée',
+                'justification' => 'Utilise efficacement les tomates périssables et crée un produit avec longue durée de conservation.',
+                'ingredients_to_prioritize' => [$urgentMaterial['name']],
+                'urgency' => $urgency,
+                'estimated_quantity' => round($urgentMaterial['quantity'] * 0.8) . ' kg de sauce',
+                'processing_time_hours' => 4,
+                'estimated_shelf_life_days' => 120,
+            ];
+        } elseif (str_contains($materialName, 'fruit') || str_contains($materialName, 'pomme') || str_contains($materialName, 'poire')) {
+            return [
+                'recipe_name' => 'Compote de Fruits Naturelle',
+                'justification' => 'Transforme les fruits périssables en produit stable avec excellente conservation et valeur ajoutée.',
+                'ingredients_to_prioritize' => [$urgentMaterial['name']],
+                'urgency' => $urgency,
+                'estimated_quantity' => round($urgentMaterial['quantity'] * 0.9) . ' kg de compote',
+                'processing_time_hours' => 3,
+                'estimated_shelf_life_days' => 90,
+            ];
+        } elseif (str_contains($materialName, 'légume') || str_contains($materialName, 'carotte') || str_contains($materialName, 'courge')) {
+            return [
+                'recipe_name' => 'Velouté ou Purée de Légumes',
+                'justification' => 'Valorise les légumes en fin de cycle et crée un ingrédient polyvalent pour transformations ultérieures.',
+                'ingredients_to_prioritize' => [$urgentMaterial['name']],
+                'urgency' => $urgency,
+                'estimated_quantity' => round($urgentMaterial['quantity'] * 0.85) . ' kg de velouté',
+                'processing_time_hours' => 3,
+                'estimated_shelf_life_days' => 60,
+            ];
+        }
+
+        // Default fallback
+        return [
+            'recipe_name' => 'Produit Transformé Premium',
+            'justification' => 'Maximise la valorisation de vos matières premières avec une transformation de qualité.',
+            'ingredients_to_prioritize' => [$urgentMaterial['name']],
+            'urgency' => $urgency,
+            'estimated_quantity' => 'À calculer',
+            'processing_time_hours' => 4,
+            'estimated_shelf_life_days' => 90,
+        ];
+    }
+
+    /**
      * Get AI recommendation to prevent waste
      * Analyzes expiring raw materials and suggests recipes
      */

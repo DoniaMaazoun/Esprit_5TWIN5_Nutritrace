@@ -64,15 +64,20 @@ class Harvest extends Model
 
     public function imageUrl(): ?string
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        // Fichier absent (disque éphémère de Render effacé au redéploiement) : pas de lien cassé
+        return $this->image_path && Storage::disk('public')->exists($this->image_path)
+            ? asset('storage/' . $this->image_path)
+            : null;
     }
 
     /**
-     * Image à afficher : la photo du producteur, sinon l'illustration de la catégorie.
+     * Image à afficher : la photo du producteur, sinon une photo réelle du produit,
+     * sinon le visuel de la catégorie.
      */
     public function displayImageUrl(): string
     {
         return $this->imageUrl()
+            ?? Category::photoUrlFor($this->product_name)
             ?? $this->category?->illustrationUrl()
             ?? asset('frontend/images/categories/default.svg');
     }
