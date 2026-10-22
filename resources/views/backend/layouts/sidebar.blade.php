@@ -100,6 +100,12 @@
         <a href="{{ route('backend.greenwashing.index') }}" class="{{ $is('backend.greenwashing.*') ? 'active' : '' }}">Anti-greenwashing <span class="ftf-soon">bientôt</span></a>
       </div>
     </div>
+
+    <div class="ftf-section">Supervision Transformateurs</div>
+    <a href="{{ route('backend.processor-monitoring.index') }}" class="ftf-link {{ $is('backend.processor-monitoring.*') ? 'active' : '' }}">
+      <i class="mdi mdi-factory ftf-ic"></i> Supervision 🏭
+    </a>
+
     <!-- Module 3 : Logistique & Carbone -->
     <a class="ftf-link {{ $inLogistics ? 'active' : '' }}" data-toggle="collapse" href="#ftf-logistics" aria-expanded="{{ $inLogistics ? 'true' : 'false' }}" aria-controls="ftf-logistics">
       <i class="mdi mdi-truck-delivery ftf-ic"></i> Logistique & Carbone <i class="mdi mdi-chevron-right ftf-caret"></i>
