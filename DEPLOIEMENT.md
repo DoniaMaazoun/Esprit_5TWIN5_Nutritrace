@@ -22,7 +22,7 @@ par **un seul pipeline** GitHub Actions.
 | `Dockerfile` | Image PHP 8.3 + Apache de l'application |
 | `docker/entrypoint.sh` | Démarrage : port Render, attente MySQL, migrations, données de démo, caches |
 | `docker-compose.yml` | Docker Desktop : MySQL 8 + phpMyAdmin (+ l'application avec le profil `app`) |
-| `render.yaml` | Blueprint Render : service web Docker + MySQL en conteneur avec disque |
+| `render.yaml` | Blueprint Render : service web Docker gratuit (base MySQL externe Aiven) |
 | `tests/Unit`, `tests/Feature` | Tests unitaires et fonctionnels |
 
 ---
@@ -100,14 +100,23 @@ En CI, ils sont joués **deux fois** : sur SQLite et sur **MySQL 8** (comme en p
 
 ### Première mise en place (une seule fois)
 
-1. **Render → New → Blueprint** → choisir le dépôt GitHub. Render lit `render.yaml` et crée :
-   - `nutritrace` (web, Docker, offre gratuite)
-   - `nutritrace-mysql` (MySQL 8 en conteneur avec disque de 1 Go — offre *Starter* payante, nécessaire
-     pour un disque persistant)
-2. Renseigner les variables marquées `sync: false` du service `nutritrace` :
+Tout est **gratuit** : l'application sur l'offre Free de Render, la base sur **Aiven for MySQL**
+(offre Free, vrai MySQL 8 — le module Transformateur utilise `DATE_FORMAT`, propre à MySQL).
+
+1. **Aiven** (https://console.aiven.io) → *Create service* → **MySQL**, offre **Free**. Une fois le
+   service démarré, noter dans *Connection information* : Host, Port, Password, et télécharger le
+   **CA certificate**. (La base `defaultdb` et l'utilisateur `avnadmin` sont créés par Aiven.)
+2. **Render → New → Blueprint** → choisir le dépôt GitHub. Render lit `render.yaml` et crée le
+   service web `nutritrace` (Docker, offre gratuite). Renseigner les variables `sync: false` :
    - `APP_KEY` : résultat de `php artisan key:generate --show`
    - `APP_URL` : l'URL du service, par ex. `https://nutritrace.onrender.com`
+   - `DB_HOST`, `DB_PORT`, `DB_PASSWORD` : valeurs Aiven
+   - `DB_SSL_CA_PEM` : le contenu complet du fichier `ca.pem` d'Aiven (connexion TLS ; le conteneur
+     l'écrit dans un fichier et le passe à PDO via `MYSQL_ATTR_SSL_CA`)
    - `AI_API_KEY` (optionnel)
+
+   Au premier démarrage, le conteneur applique les migrations puis charge les données de démo.
+   Les migrations sont compatibles avec `sql_require_primary_key` (activé par défaut chez Aiven).
 3. Service `nutritrace` → **Settings → Deploy Hook** : copier l'URL.
 4. Dans GitHub → **Settings → Secrets and variables → Actions** :
 
@@ -125,12 +134,6 @@ Le pipeline teste, construit l'image, la vérifie, la publie sur GitHub Containe
 désactivé (`autoDeploy: false`) : **une version qui échoue aux tests n'est jamais déployée**.
 
 Sur les autres branches (ex. `aziz-produit`), les étapes 1 à 3 tournent, mais pas le déploiement.
-
-### Alternative sans offre payante pour la base
-
-Supprimer le service `nutritrace-mysql` de `render.yaml` et renseigner à la main `DB_HOST`, `DB_PORT`,
-`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` vers une base MySQL externe (Aiven, TiDB Cloud…).
-Le code du module Transformateur utilise `DATE_FORMAT` (propre à MySQL) : la base doit rester MySQL.
 
 ### Limites à connaître
 
