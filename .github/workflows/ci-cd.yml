@@ -163,7 +163,7 @@ jobs:
 
       - name: Publier les rapports (JUnit + couverture)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: rapports-tests-${{ matrix.database }}
           path: |
@@ -182,6 +182,8 @@ jobs:
       packages: write
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/nutritrace
+      # Clé jetable, propre à ce test de fumée (conteneurs détruits à la fin du job)
+      APP_KEY: base64:B8cxQqgaYEJ43gpqWftuU1NGfhakD1lX7ne6uExinfM=
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v7
@@ -200,7 +202,6 @@ jobs:
 
       - name: Test de fumée (application + MySQL avec docker compose)
         run: |
-          export APP_KEY="base64:$(openssl rand -base64 32)"
           docker compose --profile app up -d --no-build db app
           echo "Attente de l'application..."
           for i in $(seq 1 60); do
