@@ -108,12 +108,13 @@ Tout est **gratuit** : l'application sur l'offre Free de Render, la base sur **A
    **CA certificate**. (La base `defaultdb` et l'utilisateur `avnadmin` sont créés par Aiven.)
 2. **Render → New → Blueprint** → choisir le dépôt GitHub. Render lit `render.yaml` et crée le
    service web `nutritrace` (Docker, offre gratuite). Renseigner les variables `sync: false` :
-   - `APP_KEY` : résultat de `php artisan key:generate --show`
-   - `APP_URL` : l'URL du service, par ex. `https://nutritrace.onrender.com`
    - `DB_HOST`, `DB_PORT`, `DB_PASSWORD` : valeurs Aiven
    - `DB_SSL_CA_PEM` : le contenu complet du fichier `ca.pem` d'Aiven (connexion TLS ; le conteneur
      l'écrit dans un fichier et le passe à PDO via `MYSQL_ATTR_SSL_CA`)
    - `AI_API_KEY` (optionnel)
+
+   `APP_KEY` n'est pas à saisir : Render génère `APP_SECRET` et le conteneur en dérive la clé Laravel.
+   `APP_URL` est fixé dans `render.yaml` (`https://nutritrace-1o91.onrender.com`).
 
    Au premier démarrage, le conteneur applique les migrations puis charge les données de démo.
    Les migrations sont compatibles avec `sql_require_primary_key` (activé par défaut chez Aiven).

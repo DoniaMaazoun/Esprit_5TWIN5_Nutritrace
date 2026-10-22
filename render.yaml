@@ -27,10 +27,10 @@ services:
         value: production
       - key: APP_DEBUG
         value: "false"
-      - key: APP_KEY
-        sync: false          # à saisir : résultat de « php artisan key:generate --show »
+      - key: APP_SECRET
+        generateValue: true  # secret aléatoire généré par Render ; le conteneur en dérive APP_KEY
       - key: APP_URL
-        sync: false          # à saisir : https://nutritrace.onrender.com (URL du service)
+        value: https://nutritrace-1o91.onrender.com
       - key: APP_LOCALE
         value: fr
       - key: LOG_CHANNEL

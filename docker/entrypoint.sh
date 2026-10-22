@@ -11,7 +11,13 @@ PORT="${PORT:-80}"
 sed -ri "s/^Listen [0-9]+/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 
-# 2. La clé de chiffrement Laravel est obligatoire
+# 2. La clé de chiffrement Laravel est obligatoire. Sur Render, elle est dérivée du secret
+#    APP_SECRET généré automatiquement par la plateforme (stable d'un déploiement à l'autre).
+if [ -z "${APP_KEY}" ] && [ -n "${APP_SECRET}" ]; then
+  APP_KEY=$(php -r 'echo "base64:".base64_encode(hash("sha256", getenv("APP_SECRET"), true));')
+  export APP_KEY
+  echo "APP_KEY dérivée de APP_SECRET."
+fi
 if [ -z "${APP_KEY}" ]; then
   echo "ERREUR : la variable APP_KEY est vide. Générez-la avec : php artisan key:generate --show" >&2
   exit 1
