@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FarmManagementController;
 use App\Http\Controllers\Admin\HarvestManagementController;
+use App\Http\Controllers\Admin\ProcessorSupervisionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Pro\AiController;
@@ -199,6 +200,11 @@ Route::prefix('admin')->name('backend.')->middleware(['auth', 'admin'])->group(f
         Route::get('/', function () {
             return view('backend.pages.dashboard'); // TODO: créer gestion éco-score
         })->name('index');
+    });
+
+    // Processor Supervision (Module 3 - Transformateur)
+    Route::prefix('processor-monitoring')->name('processor-monitoring.')->controller(App\Http\Controllers\Admin\ProcessorSupervisionController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
     });
 });
 

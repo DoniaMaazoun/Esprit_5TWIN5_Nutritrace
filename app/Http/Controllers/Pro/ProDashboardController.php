@@ -43,6 +43,7 @@ class ProDashboardController extends Controller
         // Dashboard KPIs pour les transformateurs
         $dashboardKpis = [];
         $wastePreventionRecommendation = null;
+        $expiringMaterials = [];
         
         if ($proType === 'processor') {
             $dashboardKpis = [
@@ -57,9 +58,47 @@ class ProDashboardController extends Controller
                     ->count(),
             ];
             
-            // Get AI waste prevention recommendation
-            $processorAi = app(ProcessorAiAssistant::class);
-            $wastePreventionRecommendation = $processorAi->getWastePreventionRecommendation($user);
+            // Get expiring raw materials (< 7 days before expiry)
+            $receptions = RawMaterialReception::where('processor_id', $user->id)
+                ->where('status', 'received')
+                ->with('harvest')
+                ->get();
+
+            foreach ($receptions as $reception) {
+                if (!$reception->harvest) {
+                    continue;
+                }
+
+                // Calculate expiry date (assume 30 days shelf life from harvest date)
+                $expiryDate = $reception->harvest->harvest_date?->addDays(30);
+                
+                if (!$expiryDate) {
+                    continue;
+                }
+
+                $daysUntilExpiry = now()->diffInDays($expiryDate);
+                
+                // Only include materials expiring within 7 days with remaining quantity
+                if ($daysUntilExpiry <= 7 && $daysUntilExpiry > 0 && $reception->quantity_received > 0) {
+                    $expiringMaterials[] = [
+                        'name' => $reception->harvest->product_name,
+                        'quantity' => $reception->quantity_received,
+                        'unit' => $reception->unit ?? 'kg',
+                        'days_until_expiry' => $daysUntilExpiry,
+                        'quality_status' => $reception->quality_status,
+                        'reception_id' => $reception->id,
+                    ];
+                }
+            }
+
+            // Sort by urgency (days until expiry)
+            usort($expiringMaterials, fn ($a, $b) => $a['days_until_expiry'] <=> $b['days_until_expiry']);
+            
+            // Get AI waste prevention recommendation if there are expiring materials
+            if (!empty($expiringMaterials)) {
+                $processorAi = app(ProcessorAiAssistant::class);
+                $wastePreventionRecommendation = $processorAi->recommendWastePreventionRecipes($expiringMaterials);
+            }
         }
 
         // Préparer les données selon le type de professionnel
@@ -164,6 +203,7 @@ class ProDashboardController extends Controller
             'dashboardData' => $dashboardData,
             'dashboardKpis' => $dashboardKpis,
             'wastePreventionRecommendation' => $wastePreventionRecommendation,
+            'expiringMaterials' => $expiringMaterials ?? [],
         ]);
     }
 
