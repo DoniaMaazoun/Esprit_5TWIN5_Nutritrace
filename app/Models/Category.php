@@ -43,13 +43,66 @@ class Category extends Model
     }
 
     /**
-     * Illustration de la catégorie (public/frontend/images/categories/{slug}.svg), sinon visuel générique.
+     * Mots dont la photo porte un autre nom (après passage au singulier).
+     */
+    private const PHOTO_ALIASES = ['cereale' => 'ble'];
+
+    private static ?array $photos = null;
+
+    /**
+     * Visuel de la catégorie : sa photo (public/frontend/images/products), sinon son illustration
+     * (public/frontend/images/categories/{slug}.svg), sinon le visuel générique.
      */
     public function illustrationUrl(): string
     {
+        if ($photo = self::photoUrlFor($this->slug)) {
+            return $photo;
+        }
+
         $file = "frontend/images/categories/{$this->slug}.svg";
 
         return asset(is_file(public_path($file)) ? $file : 'frontend/images/categories/default.svg');
+    }
+
+    /**
+     * Photo réelle correspondant à un nom de produit ou de catégorie
+     * (« Tomates Bio Provence » → tomate.jpg, « Pommes de terre Charlotte » → pomme-de-terre.jpg).
+     */
+    public static function photoUrlFor(?string $name): ?string
+    {
+        $text = '-' . self::singular(Str::slug((string) $name)) . '-';
+
+        foreach (self::photos() as $key => $file) {
+            if (str_contains($text, "-{$key}-")) {
+                return asset("frontend/images/products/{$file}");
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Photos disponibles, clé au singulier → fichier, les noms composés d'abord.
+     */
+    private static function photos(): array
+    {
+        if (self::$photos === null) {
+            self::$photos = [];
+            foreach (glob(public_path('frontend/images/products/*.jpg')) ?: [] as $path) {
+                self::$photos[self::singular(pathinfo($path, PATHINFO_FILENAME))] = basename($path);
+            }
+            uksort(self::$photos, fn ($a, $b) => substr_count($b, '-') <=> substr_count($a, '-') ?: strcmp($a, $b));
+        }
+
+        return self::$photos;
+    }
+
+    private static function singular(string $slug): string
+    {
+        return collect(explode('-', $slug))
+            ->map(fn ($word) => strlen($word) > 3 ? preg_replace('/s$/', '', $word) : $word)
+            ->map(fn ($word) => self::PHOTO_ALIASES[$word] ?? $word)
+            ->implode('-');
     }
 
     public function scopeActive(Builder $query): Builder

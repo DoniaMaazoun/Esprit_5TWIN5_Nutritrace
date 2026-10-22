@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Category;
 use App\Models\Farm;
 use App\Models\Harvest;
 use Tests\TestCase;
@@ -39,6 +40,19 @@ class HarvestAndFarmModelTest extends TestCase
         $this->assertSame('q', $harvest->unitShort());
         $this->assertSame('Expédié', $harvest->statusLabel());
         $this->assertSame('Sans catégorie', $harvest->categoryLabel());
+    }
+
+    public function test_real_photo_is_matched_from_product_or_category_name(): void
+    {
+        $this->assertStringEndsWith('products/tomate.jpg', Category::photoUrlFor('Tomates Bio Provence'));
+        $this->assertStringEndsWith('products/pomme-de-terre.jpg', Category::photoUrlFor('Pommes de terre Charlotte'));
+        $this->assertStringEndsWith('products/datte.jpg', Category::photoUrlFor('Dattes Deglet Nour'));
+        $this->assertStringEndsWith('products/ble.jpg', Category::photoUrlFor('Blé dur'));
+        $this->assertStringEndsWith('products/ble.jpg', Category::photoUrlFor('cereales'));
+        $this->assertStringEndsWith('products/plantes-aromatiques.jpg', Category::photoUrlFor('plantes-aromatiques'));
+        $this->assertNull(Category::photoUrlFor('Safran'));
+
+        $this->assertStringEndsWith('products/grenade.jpg', (new Harvest(['product_name' => 'Grenade']))->displayImageUrl());
     }
 
     public function test_farm_total_production_and_yield(): void

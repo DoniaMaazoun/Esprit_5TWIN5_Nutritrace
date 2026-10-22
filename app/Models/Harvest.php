@@ -68,11 +68,13 @@ class Harvest extends Model
     }
 
     /**
-     * Image à afficher : la photo du producteur, sinon l'illustration de la catégorie.
+     * Image à afficher : la photo du producteur, sinon une photo réelle du produit,
+     * sinon le visuel de la catégorie.
      */
     public function displayImageUrl(): string
     {
         return $this->imageUrl()
+            ?? Category::photoUrlFor($this->product_name)
             ?? $this->category?->illustrationUrl()
             ?? asset('frontend/images/categories/default.svg');
     }
