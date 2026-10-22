@@ -232,6 +232,22 @@
 .recipe-card .btn-outline-success { border-color: var(--processor-primary); color: var(--processor-primary); }
 .recipe-card .btn-outline-success:hover { background: var(--processor-primary); color: #fff; }
 
+/* --- Cartes de lots de production (identique aux recettes) --- */
+.lot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.lot-card { background: #fff; border-radius: 16px; border: 1px solid rgba(45,106,79,.1); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; transition: transform .25s, box-shadow .25s; }
+.lot-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+.lot-card__visual { height: 180px; display: grid; place-items: center; font-size: 3rem; color: var(--processor-primary); background: linear-gradient(135deg, #c8e6c9, #f1f8f4); position: relative; overflow: hidden; }
+.lot-card__status { position: absolute; top: 12px; right: 12px; z-index: 1; background: var(--processor-primary); color: #fff; font-size: .72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.lot-card__body { padding: 16px 18px 12px; flex: 1; font-size: .86rem; }
+.lot-card__name { font-family: var(--font-heading); font-weight: 600; font-size: 1.12rem; color: var(--dark); margin: 0; }
+.lot-card__desc { color: var(--gray); margin: 2px 0 10px; }
+.lot-card__line { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; color: var(--gray-dark); }
+.lot-card__line i { width: 16px; color: var(--processor-primary-light, #2D6A4F); text-align: center; }
+.lot-card__foot { border-top: 1px solid var(--gray-light); padding: 10px 18px; display: flex; gap: 6px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.lot-card .btn { padding: .35rem .75rem; font-size: .82rem; border: 1px solid transparent; gap: 6px; }
+.lot-card .btn-outline-success { border-color: var(--processor-primary); color: var(--processor-primary); }
+.lot-card .btn-outline-success:hover { background: var(--processor-primary); color: #fff; }
+
 /* --- Pagination --- */
 .pagination {
   margin-top: 20px;

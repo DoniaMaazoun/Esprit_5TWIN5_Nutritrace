@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Pro;
 
 use App\Http\Controllers\Controller;
 use App\Models\Harvest;
+use App\Models\ProductionLot;
 use App\Models\Recipe;
 use App\Models\RawMaterialReception;
 use App\Models\User;
 use App\Services\AiAssistant;
+use App\Services\ProcessorAiAssistant;
 use App\Services\ProductIntelligence;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,13 +42,24 @@ class ProDashboardController extends Controller
 
         // Dashboard KPIs pour les transformateurs
         $dashboardKpis = [];
+        $wastePreventionRecommendation = null;
+        
         if ($proType === 'processor') {
             $dashboardKpis = [
                 'pending_harvests' => \App\Models\Harvest::where('status', 'in_stock')->count(),
                 'active_recipes' => \App\Models\Recipe::where('processor_id', $user->id)->where('is_active', true)->count(),
                 'total_receptions' => \App\Models\RawMaterialReception::where('processor_id', $user->id)->count(),
                 'total_recipes' => \App\Models\Recipe::where('processor_id', $user->id)->count(),
+                'total_production_lots' => \App\Models\ProductionLot::where('processor_id', $user->id)->count(),
+                'production_this_month' => \App\Models\ProductionLot::where('processor_id', $user->id)
+                    ->whereMonth('production_date', now()->month)
+                    ->whereYear('production_date', now()->year)
+                    ->count(),
             ];
+            
+            // Get AI waste prevention recommendation
+            $processorAi = app(ProcessorAiAssistant::class);
+            $wastePreventionRecommendation = $processorAi->getWastePreventionRecommendation($user);
         }
 
         // Préparer les données selon le type de professionnel
@@ -150,6 +163,7 @@ class ProDashboardController extends Controller
             'proType' => $proType,
             'dashboardData' => $dashboardData,
             'dashboardKpis' => $dashboardKpis,
+            'wastePreventionRecommendation' => $wastePreventionRecommendation,
         ]);
     }
 

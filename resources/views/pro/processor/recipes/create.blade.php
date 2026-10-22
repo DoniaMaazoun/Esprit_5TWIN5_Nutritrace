@@ -54,14 +54,19 @@
       <div class="mb-3">
         <label class="form-label" for="name">Nom de la Recette *</label>
         <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" 
-          value="{{ old('name') }}" placeholder="Ex: Sauce Tomate Bio 1L" required>
+          value="{{ old('name') }}" placeholder="Ex: Sauce Tomate Bio 1L">
         @error('name') <span class="error-message">{{ $message }}</span> @enderror
       </div>
 
       <div class="mb-3">
         <label class="form-label" for="description">Description</label>
-        <textarea id="description" name="description" class="form-control @error('description') is-invalid @enderror" 
-          rows="3" placeholder="Décrivez votre recette...">{{ old('description') }}</textarea>
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <textarea id="description" name="description" class="form-control @error('description') is-invalid @enderror" 
+            rows="3" placeholder="Décrivez votre recette..." style="flex: 1;">{{ old('description') }}</textarea>
+          <button type="button" id="aiGenerateBtn" class="btn btn-outline-success" title="Générer avec l'IA" style="height: 80px; white-space: nowrap;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> IA
+          </button>
+        </div>
         @error('description') <span class="error-message">{{ $message }}</span> @enderror
       </div>
 
@@ -69,12 +74,12 @@
         <div class="col-md-6 mb-3">
           <label class="form-label" for="yield_quantity">Quantité Produite *</label>
           <input type="number" id="yield_quantity" name="yield_quantity" class="form-control @error('yield_quantity') is-invalid @enderror" 
-            step="0.01" value="{{ old('yield_quantity') }}" placeholder="500" required>
+            step="0.01" value="{{ old('yield_quantity') }}" placeholder="500">
           @error('yield_quantity') <span class="error-message">{{ $message }}</span> @enderror
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label" for="yield_unit">Unité *</label>
-          <select id="yield_unit" name="yield_unit" class="form-select @error('yield_unit') is-invalid @enderror" required>
+          <select id="yield_unit" name="yield_unit" class="form-select @error('yield_unit') is-invalid @enderror">
             <option value="">-- Choisir --</option>
             <option value="kg" @selected(old('yield_unit') === 'kg')>Kilogrammes (kg)</option>
             <option value="g" @selected(old('yield_unit') === 'g')>Grammes (g)</option>
@@ -91,7 +96,7 @@
       <div class="mb-3">
         <label class="form-label" for="preparation_time">Temps de Préparation (min) *</label>
         <input type="number" id="preparation_time" name="preparation_time_minutes" class="form-control @error('preparation_time_minutes') is-invalid @enderror" 
-          value="{{ old('preparation_time_minutes', 0) }}" min="0" required>
+          value="{{ old('preparation_time_minutes', 0) }}">
         @error('preparation_time_minutes') <span class="error-message">{{ $message }}</span> @enderror
       </div>
 
@@ -121,7 +126,7 @@
             <div class="ingredient-item">
               <div class="ingredient-grid">
                 <div>
-                  <select name="items[{{ $index }}][raw_material_name]" class="form-select" required>
+                  <select name="items[{{ $index }}][raw_material_name]" class="form-select">
                     <option value="">-- Sélectionner --</option>
                     @foreach($receivedMaterials as $material)
                       <option value="{{ $material->product_name }}" @selected($item['raw_material_name'] === $material->product_name)>
@@ -131,10 +136,10 @@
                   </select>
                 </div>
                 <div>
-                  <input type="number" name="items[{{ $index }}][quantity_required]" class="form-control" step="0.01" value="{{ $item['quantity_required'] }}" placeholder="Qté" required>
+                  <input type="number" name="items[{{ $index }}][quantity_required]" class="form-control" step="0.01" value="{{ $item['quantity_required'] }}" placeholder="Qté">
                 </div>
                 <div>
-                  <select name="items[{{ $index }}][unit]" class="form-select" required>
+                  <select name="items[{{ $index }}][unit]" class="form-select">
                     <option value="kg" @selected($item['unit'] === 'kg')>kg</option>
                     <option value="g" @selected($item['unit'] === 'g')>g</option>
                     <option value="quintal" @selected($item['unit'] === 'quintal')>q</option>
@@ -157,7 +162,7 @@
           <div class="ingredient-item">
             <div class="ingredient-grid">
               <div>
-                <select name="items[0][raw_material_name]" class="form-select" required>
+                <select name="items[0][raw_material_name]" class="form-select">
                   <option value="">-- Sélectionner --</option>
                   @foreach($receivedMaterials as $material)
                     <option value="{{ $material->product_name }}">{{ $material->product_name }}</option>
@@ -165,10 +170,10 @@
                 </select>
               </div>
               <div>
-                <input type="number" name="items[0][quantity_required]" class="form-control" step="0.01" placeholder="Qté" required>
+                <input type="number" name="items[0][quantity_required]" class="form-control" step="0.01" placeholder="Qté">
               </div>
               <div>
-                <select name="items[0][unit]" class="form-select" required>
+                <select name="items[0][unit]" class="form-select">
                   <option value="kg">kg</option>
                   <option value="g">g</option>
                   <option value="quintal">q</option>
@@ -209,6 +214,100 @@
 <script>
 let ingredientCount = document.querySelectorAll('.ingredient-item').length;
 const receivedMaterials = @json($receivedMaterials);
+const form = document.getElementById('recipeForm');
+
+// Validate form on submit
+form.addEventListener('submit', function(e) {
+  if (!validateForm()) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+function validateForm() {
+  // Clear previous errors
+  document.querySelectorAll('.form-error-highlight').forEach(el => el.classList.remove('form-error-highlight'));
+  
+  let isValid = true;
+  
+  // Validate name
+  const name = document.getElementById('name').value.trim();
+  if (!name) {
+    showFieldError('name', 'Le nom de la recette est obligatoire');
+    isValid = false;
+  } else if (name.length > 100) {
+    showFieldError('name', 'Le nom ne peut pas dépasser 100 caractères');
+    isValid = false;
+  }
+  
+  // Validate yield quantity
+  const yieldQty = parseFloat(document.getElementById('yield_quantity').value);
+  if (!yieldQty || yieldQty <= 0) {
+    showFieldError('yield_quantity', 'La quantité produite doit être supérieure à 0');
+    isValid = false;
+  }
+  
+  // Validate yield unit
+  const yieldUnit = document.getElementById('yield_unit').value;
+  if (!yieldUnit) {
+    showFieldError('yield_unit', 'L\'unité est obligatoire');
+    isValid = false;
+  }
+  
+  // Validate preparation time
+  const prepTime = parseInt(document.getElementById('preparation_time').value);
+  if (prepTime === null || prepTime === '' || prepTime < 0) {
+    showFieldError('preparation_time', 'Le temps de préparation doit être 0 ou plus');
+    isValid = false;
+  }
+  
+  // Validate ingredients
+  const ingredients = document.querySelectorAll('.ingredient-item');
+  if (ingredients.length === 0) {
+    alert('Au moins un ingrédient est obligatoire');
+    isValid = false;
+  } else {
+    ingredients.forEach((ingredient, index) => {
+      const materialSelect = ingredient.querySelector('select[name*="raw_material_name"]');
+      const qtyInput = ingredient.querySelector('input[name*="quantity_required"]');
+      const unitSelect = ingredient.querySelector('select[name*="unit"]');
+      
+      if (!materialSelect.value) {
+        materialSelect.classList.add('is-invalid');
+        isValid = false;
+      }
+      
+      const qty = parseFloat(qtyInput.value);
+      if (!qty || qty <= 0) {
+        qtyInput.classList.add('is-invalid');
+        isValid = false;
+      }
+      
+      if (!unitSelect.value) {
+        unitSelect.classList.add('is-invalid');
+        isValid = false;
+      }
+    });
+  }
+  
+  return isValid;
+}
+
+function showFieldError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (field) {
+    field.classList.add('is-invalid');
+    const errorDiv = field.parentElement.querySelector('.error-message');
+    if (!errorDiv) {
+      const error = document.createElement('span');
+      error.className = 'error-message';
+      error.textContent = message;
+      field.parentElement.appendChild(error);
+    } else {
+      errorDiv.textContent = message;
+    }
+  }
+}
 
 function addIngredient() {
   const container = document.getElementById('ingredientsContainer');
@@ -222,13 +321,13 @@ function addIngredient() {
   div.innerHTML = `
     <div class="ingredient-grid">
       <div>
-        <select name="items[${ingredientCount}][raw_material_name]" class="form-select" required>${optionsHTML}</select>
+        <select name="items[${ingredientCount}][raw_material_name]" class="form-select">${optionsHTML}</select>
       </div>
       <div>
-        <input type="number" name="items[${ingredientCount}][quantity_required]" class="form-control" step="0.01" placeholder="Qté" required>
+        <input type="number" name="items[${ingredientCount}][quantity_required]" class="form-control" step="0.01" placeholder="Qté">
       </div>
       <div>
-        <select name="items[${ingredientCount}][unit]" class="form-select" required>
+        <select name="items[${ingredientCount}][unit]" class="form-select">
           <option value="kg">kg</option>
           <option value="g">g</option>
           <option value="quintal">q</option>
@@ -256,6 +355,80 @@ function removeIngredient(btn) {
   } else {
     alert('Au moins un ingrédient est obligatoire!');
   }
+}
+
+// ========== AI Recipe Generation ==========
+document.getElementById('aiGenerateBtn').addEventListener('click', async function() {
+  const recipeName = document.getElementById('name').value.trim();
+  const ingredients = extractIngredients();
+  
+  if (!recipeName) {
+    alert('Veuillez d\'abord entrer un nom pour la recette.');
+    return;
+  }
+
+  if (ingredients.length === 0) {
+    alert('Veuillez d\'abord ajouter au moins un ingrédient.');
+    return;
+  }
+
+  const btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Génération intelligente...';
+
+  try {
+    const response = await fetch('{{ route("pro.processor.recipes.ai.generate") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+      },
+      body: JSON.stringify({ 
+        recipe_name: recipeName,
+        ingredients 
+      })
+    });
+
+    if (!response.ok) throw new Error('Erreur API');
+    
+    const data = await response.json();
+    
+    // Remplir les champs
+    document.getElementById('description').value = data.description || '';
+    document.getElementById('instructions').value = data.instructions || '';
+    
+    // Afficher le résultat
+    if (data.description && data.instructions) {
+      alert(`✅ Recette générée intelligemment!\n\n📊 Éco-score estimé: ${data.eco_score}`);
+    } else {
+      alert('Contenu généré. Vérifiez et ajustez selon vos besoins.');
+    }
+
+  } catch (error) {
+    console.error('AI Error:', error);
+    alert('Erreur lors de la génération. Veuillez réessayer.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> IA';
+  }
+});
+
+function extractIngredients() {
+  const ingredients = [];
+  document.querySelectorAll('.ingredient-item').forEach(item => {
+    const nameSelect = item.querySelector('select[name*="[raw_material_name]"]');
+    const qtyInput = item.querySelector('input[name*="[quantity_required]"]');
+    const unitSelect = item.querySelector('select[name*="[unit]"]');
+    
+    if (nameSelect && nameSelect.value && qtyInput && qtyInput.value && unitSelect && unitSelect.value) {
+      ingredients.push({
+        name: nameSelect.value,
+        quantity: parseFloat(qtyInput.value),
+        unit: unitSelect.value
+      });
+    }
+  });
+  return ingredients;
 }
 </script>
 

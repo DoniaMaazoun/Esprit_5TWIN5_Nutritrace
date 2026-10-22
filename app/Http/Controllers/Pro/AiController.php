@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pro;
 use App\Http\Controllers\Controller;
 use App\Models\Farm;
 use App\Services\AiAssistant;
+use App\Services\ProcessorAiAssistant;
 use App\Services\ProductIntelligence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,10 +14,11 @@ use Illuminate\Validation\Rule;
 
 /**
  * Fonctionnalités IA du Module 1 : description générée, analyse d'exploitation, chatbot.
+ * Fonctionnalités IA du Module 3 : génération de recettes, prévention du gaspillage.
  */
 class AiController extends Controller
 {
-    public function __construct(private AiAssistant $ai)
+    public function __construct(private AiAssistant $ai, private ProcessorAiAssistant $processorAi)
     {
     }
 
@@ -81,5 +83,23 @@ class AiController extends Controller
         ]);
 
         return response()->json($this->ai->chat($request->user(), $data['message'], $data['history'] ?? []));
+    }
+
+    /**
+     * Generate recipe description and instructions using AI
+     */
+    public function generateRecipeContent(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'recipe_name' => ['required', 'string', 'max:150'],
+            'ingredients' => ['required', 'array', 'min:1'],
+            'ingredients.*.name' => ['required', 'string', 'max:100'],
+            'ingredients.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'ingredients.*.unit' => ['required', 'string', 'max:20'],
+        ]);
+
+        $content = $this->processorAi->generateRecipeContent($data);
+
+        return response()->json($content);
     }
 }

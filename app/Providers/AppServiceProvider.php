@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register policies
+        $policies = config('policies.models');
+        
+        foreach ($policies as $model => $policy) {
+            Gate::policy($model, $policy);
+        }
     }
 }
+

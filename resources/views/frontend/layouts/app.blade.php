@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Farm to Fork | Traçabilité Alimentaire & Éco-Responsabilité')</title>
   <meta name="description" content="@yield('description', 'Tracez vos produits de la ferme à l\'assiette. Découvrez l\'impact écologique, vérifiez les certifications et combattez le greenwashing.')">
   

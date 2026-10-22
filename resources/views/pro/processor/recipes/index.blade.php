@@ -44,6 +44,11 @@
     <div class="stat"><div class="stat__icon"><i class="fa-solid fa-cubes"></i></div><div><div class="stat__value">{{ $recipes->total() }}</div><div class="stat__label">Affichées</div></div></div>
   </div>
 
+  <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2" style="margin-bottom: 28px; margin-top: 0;">
+    <span><i class="fa-solid fa-circle-info"></i> Vous gérez toutes vos recettes de transformation. Créez des recettes avec les matières brutes que vous avez reçues.</span>
+    <a href="{{ route('pro.processor.recipes.create') }}" class="btn btn-success btn-sm"><i class="fa-solid fa-plus"></i> Nouvelle Recette</a>
+  </div>
+
   {{-- Barre de recherche intelligente --}}
   <form method="GET" action="{{ route('pro.processor.recipes.index') }}" class="smart-search" novalidate>
     <div class="smart-search__box">
@@ -127,11 +132,6 @@
       {{ $recipes->links('pagination::bootstrap-5') }}
     </div>
   @endif
-
-  <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2" style="margin-top: 20px;">
-    <span><i class="fa-solid fa-circle-info"></i> Vous gérez toutes vos recettes de transformation. Créez des recettes avec les matières brutes que vous avez reçues.</span>
-    <a href="{{ route('pro.processor.recipes.create') }}" class="btn btn-success btn-sm"><i class="fa-solid fa-plus"></i> Nouvelle Recette</a>
-  </div>
 </div>
 
 @endsection

@@ -187,64 +187,97 @@ class ProcessorRecipeController extends Controller
         $this->authorize('update', $recipe);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => 'nullable|string|max:100',
             'description' => 'nullable|string|max:500',
-            'yield_quantity' => 'required|numeric|min:0.01',
-            'yield_unit' => 'required|string|in:kg,g,quintal,tonne,L,mL,unités',
-            'preparation_time_minutes' => 'required|integer|min:0',
+            'yield_quantity' => 'nullable|numeric|min:0.01',
+            'yield_unit' => 'nullable|string|in:kg,g,quintal,tonne,L,mL,unités',
+            'preparation_time_minutes' => 'nullable|integer|min:0',
             'instructions' => 'nullable|string',
-            'is_active' => 'boolean',
-            'items' => 'required|array|min:1',
+            'is_active' => 'nullable|in:0,1,on',
+            'items' => 'nullable|array',
             'items.*.id' => 'nullable|exists:recipe_items,id',
-            'items.*.raw_material_name' => 'required|string|max:150',
-            'items.*.quantity_required' => 'required|numeric|min:0.01',
-            'items.*.unit' => 'required|string|in:kg,g,quintal,tonne,L,mL,unités',
+            'items.*.raw_material_name' => 'nullable|string|max:150',
+            'items.*.quantity_required' => 'nullable|numeric|min:0.01',
+            'items.*.unit' => 'nullable|string|in:kg,g,quintal,tonne,L,mL,unités',
             'items.*.notes' => 'nullable|string|max:255',
         ]);
 
         DB::transaction(function () use ($recipe, $validated) {
-            // Mettre à jour la recette
-            $recipe->update([
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'yield_quantity' => $validated['yield_quantity'],
-                'yield_unit' => $validated['yield_unit'],
-                'preparation_time_minutes' => $validated['preparation_time_minutes'],
-                'instructions' => $validated['instructions'],
-                'is_active' => $validated['is_active'] ?? true,
-            ]);
-
-            // Collecte les IDs des ingrédients à conserver
-            $itemIdsToKeep = [];
-
-            // Mettre à jour ou créer les ingrédients
-            foreach ($validated['items'] as $item) {
-                if (isset($item['id'])) {
-                    // Mettre à jour un ingrédient existant
-                    RecipeItem::findOrFail($item['id'])->update([
-                        'raw_material_name' => $item['raw_material_name'],
-                        'quantity_required' => $item['quantity_required'],
-                        'unit' => $item['unit'],
-                        'notes' => $item['notes'] ?? null,
-                    ]);
-                    $itemIdsToKeep[] = $item['id'];
-                } else {
-                    // Créer un nouvel ingrédient
-                    $newItem = RecipeItem::create([
-                        'recipe_id' => $recipe->id,
-                        'raw_material_name' => $item['raw_material_name'],
-                        'quantity_required' => $item['quantity_required'],
-                        'unit' => $item['unit'],
-                        'notes' => $item['notes'] ?? null,
-                    ]);
-                    $itemIdsToKeep[] = $newItem->id;
-                }
+            // Mettre à jour seulement les champs fournis
+            $updateData = [];
+            if (isset($validated['name']) && $validated['name'] !== null) {
+                $updateData['name'] = $validated['name'];
+            }
+            if (isset($validated['description']) && $validated['description'] !== null) {
+                $updateData['description'] = $validated['description'];
+            }
+            if (isset($validated['yield_quantity']) && $validated['yield_quantity'] !== null) {
+                $updateData['yield_quantity'] = $validated['yield_quantity'];
+            }
+            if (isset($validated['yield_unit']) && $validated['yield_unit'] !== null) {
+                $updateData['yield_unit'] = $validated['yield_unit'];
+            }
+            if (isset($validated['preparation_time_minutes']) && $validated['preparation_time_minutes'] !== null) {
+                $updateData['preparation_time_minutes'] = $validated['preparation_time_minutes'];
+            }
+            if (isset($validated['instructions']) && $validated['instructions'] !== null) {
+                $updateData['instructions'] = $validated['instructions'];
+            }
+            if (isset($validated['is_active']) && $validated['is_active'] !== null) {
+                $updateData['is_active'] = (bool)$validated['is_active'];
+            }
+            
+            if (!empty($updateData)) {
+                $recipe->update($updateData);
             }
 
-            // Supprimer les ingrédients qui ne sont plus présents
-            RecipeItem::where('recipe_id', $recipe->id)
-                ->whereNotIn('id', $itemIdsToKeep)
-                ->delete();
+            // Gérer les ingrédients seulement s'ils sont fournis
+            if (isset($validated['items']) && is_array($validated['items']) && count($validated['items']) > 0) {
+                $itemIdsToKeep = [];
+
+                foreach ($validated['items'] as $item) {
+                    if (isset($item['id']) && $item['id'] !== null) {
+                        // Mettre à jour un ingrédient existant (seulement les champs fournis)
+                        $itemUpdateData = [];
+                        if (isset($item['raw_material_name']) && $item['raw_material_name'] !== null) {
+                            $itemUpdateData['raw_material_name'] = $item['raw_material_name'];
+                        }
+                        if (isset($item['quantity_required']) && $item['quantity_required'] !== null) {
+                            $itemUpdateData['quantity_required'] = $item['quantity_required'];
+                        }
+                        if (isset($item['unit']) && $item['unit'] !== null) {
+                            $itemUpdateData['unit'] = $item['unit'];
+                        }
+                        if (isset($item['notes'])) {
+                            $itemUpdateData['notes'] = $item['notes'];
+                        }
+                        
+                        if (!empty($itemUpdateData)) {
+                            RecipeItem::findOrFail($item['id'])->update($itemUpdateData);
+                        }
+                        $itemIdsToKeep[] = $item['id'];
+                    } else {
+                        // Créer un nouvel ingrédient
+                        if (isset($item['raw_material_name']) && isset($item['quantity_required']) && isset($item['unit'])) {
+                            $newItem = RecipeItem::create([
+                                'recipe_id' => $recipe->id,
+                                'raw_material_name' => $item['raw_material_name'],
+                                'quantity_required' => $item['quantity_required'],
+                                'unit' => $item['unit'],
+                                'notes' => $item['notes'] ?? null,
+                            ]);
+                            $itemIdsToKeep[] = $newItem->id;
+                        }
+                    }
+                }
+
+                // Supprimer les ingrédients qui ne sont plus présents
+                if (!empty($itemIdsToKeep)) {
+                    RecipeItem::where('recipe_id', $recipe->id)
+                        ->whereNotIn('id', $itemIdsToKeep)
+                        ->delete();
+                }
+            }
         });
 
         return redirect()->route('pro.processor.recipes.show', $recipe)

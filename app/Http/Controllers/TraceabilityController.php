@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Farm;
 use App\Models\Harvest;
+use App\Models\ProductionLot;
 use App\Services\ProductIntelligence;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,20 @@ class TraceabilityController extends Controller
 {
     public function show(string $code, ProductIntelligence $intel): View
     {
+        // Try to find as a ProductionLot first (production lot QR codes start with "LOT-")
+        if (Str::startsWith($code, 'LOT-')) {
+            $productionLot = ProductionLot::where('qr_code_data', $code)
+                ->with(['recipe', 'processor', 'recipe.items'])
+                ->first();
+            
+            if ($productionLot) {
+                return view('frontend.pages.traceability-production-lot', [
+                    'lot' => $productionLot,
+                ]);
+            }
+        }
+
+        // Fall back to Harvest (original code)
         $harvest = Harvest::where('batch_code', $code)->with(['farm.user', 'category'])->firstOrFail();
 
         $related = $harvest->farm->harvests()->with(['farm.user', 'category'])

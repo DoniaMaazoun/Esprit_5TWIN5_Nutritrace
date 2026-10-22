@@ -87,7 +87,105 @@
     .form-row { grid-template-columns: 1fr; }
     .quality-options { grid-template-columns: 1fr; }
   }
+
+  .error-message {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .is-invalid {
+    border-color: #dc3545 !important;
+  }
+
+  .required::after {
+    content: ' *';
+    color: #dc3545;
+  }
 </style>
+
+<script>
+const form = document.getElementById('receptionForm');
+const maxQuantity = {{ $harvest->quantityInKg() }};
+
+form.addEventListener('submit', function(e) {
+  if (!validateForm()) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+function validateForm() {
+  let isValid = true;
+  clearErrors();
+  
+  // Validate quantity
+  const qty = parseFloat(document.getElementById('quantity_received').value);
+  if (!qty || qty <= 0) {
+    showError('quantity_received', 'La quantité reçue doit être supérieure à 0');
+    isValid = false;
+  } else if (qty > maxQuantity) {
+    showError('quantity_received', `La quantité ne peut pas dépasser ${maxQuantity} kg`);
+    isValid = false;
+  }
+  
+  // Validate date
+  const date = document.getElementById('reception_date').value;
+  if (!date) {
+    showError('reception_date', 'La date de réception est obligatoire');
+    isValid = false;
+  } else {
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate > today) {
+      showError('reception_date', 'La date ne peut pas être dans le futur');
+      isValid = false;
+    }
+  }
+  
+  // Validate quality status
+  const qualityStatus = document.querySelector('input[name="quality_status"]:checked');
+  if (!qualityStatus) {
+    alert('Sélectionnez un état de qualité');
+    isValid = false;
+  }
+  
+  // Validate temperature if provided
+  const temp = document.getElementById('temperature').value;
+  if (temp) {
+    const tempNum = parseFloat(temp);
+    if (isNaN(tempNum) || tempNum < -50 || tempNum > 50) {
+      showError('temperature', 'La température doit être entre -50°C et 50°C');
+      isValid = false;
+    }
+  }
+  
+  return isValid;
+}
+
+function showError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (field) {
+    field.classList.add('is-invalid');
+    const errorDiv = field.parentElement.querySelector('.error-message');
+    if (errorDiv) {
+      errorDiv.textContent = message;
+    } else {
+      const error = document.createElement('span');
+      error.className = 'error-message';
+      error.textContent = message;
+      field.parentElement.appendChild(error);
+    }
+  }
+}
+
+function clearErrors() {
+  document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+  document.querySelectorAll('.error-message').forEach(el => el.remove());
+}
+</script>
 
 <div class="page-head">
   <div>
@@ -142,7 +240,7 @@
       </div>
 
       <!-- Reception Form -->
-      <form method="POST" action="{{ route('pro.processor.raw-materials.store', $harvest) }}">
+      <form method="POST" action="{{ route('pro.processor.raw-materials.store', $harvest) }}" id="receptionForm">
         @csrf
 
         <h2 class="p-card__title" style="margin-top: 2rem; margin-bottom: 1rem;"><i class="fa-solid fa-file-import"></i> Détails Réception</h2>
@@ -150,39 +248,37 @@
         <!-- Quantity Received & Reception Date -->
         <div class="form-row">
           <div>
-            <label for="quantity_received" class="form-label required">Quantité Reçue (kg)</label>
+            <label for="quantity_received" class="form-label">Quantité Reçue (kg) *</label>
             <input 
               type="number" 
               id="quantity_received" 
               name="quantity_received" 
               step="0.01" 
-              min="0.01"
-              max="{{ $harvest->quantityInKg() }}"
               value="{{ old('quantity_received') }}"
               placeholder="Ex: 450.50"
-              class="form-control"
-              required
+              class="form-control @error('quantity_received') is-invalid @enderror"
             >
+            @error('quantity_received') <span class="error-message">{{ $message }}</span> @enderror
             <small class="form-text text-muted">Quantité reçue à votre usine</small>
           </div>
 
           <div>
-            <label for="reception_date" class="form-label required">Date de Réception</label>
+            <label for="reception_date" class="form-label">Date de Réception *</label>
             <input 
               type="date" 
               id="reception_date" 
               name="reception_date" 
               value="{{ old('reception_date', now()->format('Y-m-d')) }}"
-              class="form-control"
-              required
+              class="form-control @error('reception_date') is-invalid @enderror"
             >
+            @error('reception_date') <span class="error-message">{{ $message }}</span> @enderror
             <small class="form-text text-muted">Date d'arrivée du lot à l'usine</small>
           </div>
         </div>
 
         <!-- Quality Status -->
         <div style="margin-top: 1.5rem;">
-          <label class="form-label required">État de Qualité</label>
+          <label class="form-label">État de Qualité *</label>
           <div class="quality-options">
             <div class="quality-option">
               <input 
@@ -224,6 +320,7 @@
               </label>
             </div>
           </div>
+          @error('quality_status') <span class="error-message">{{ $message }}</span> @enderror
         </div>
 
         <!-- Quality Notes -->
@@ -233,9 +330,10 @@
             id="quality_notes" 
             name="quality_notes" 
             placeholder="Décrivez l'état du produit, dommages observés, etc."
-            class="form-control"
+            class="form-control @error('quality_notes') is-invalid @enderror"
             rows="3"
           >{{ old('quality_notes') }}</textarea>
+          @error('quality_notes') <span class="error-message">{{ $message }}</span> @enderror
           <small class="form-text text-muted">Observations sur la qualité du lot reçu</small>
         </div>
 
@@ -249,8 +347,9 @@
               name="storage_location" 
               placeholder="Ex: Entrepôt A - Étagère 3"
               value="{{ old('storage_location') }}"
-              class="form-control"
+              class="form-control @error('storage_location') is-invalid @enderror"
             >
+            @error('storage_location') <span class="error-message">{{ $message }}</span> @enderror
             <small class="form-text text-muted">Où est stocké le produit dans votre usine</small>
           </div>
 
@@ -261,12 +360,11 @@
               id="temperature" 
               name="temperature" 
               step="0.1"
-              min="-50"
-              max="50"
               placeholder="Ex: 4"
               value="{{ old('temperature') }}"
-              class="form-control"
+              class="form-control @error('temperature') is-invalid @enderror"
             >
+            @error('temperature') <span class="error-message">{{ $message }}</span> @enderror
             <small class="form-text text-muted">Température de stockage (ex: 4°C)</small>
           </div>
         </div>
@@ -278,9 +376,10 @@
             id="internal_notes" 
             name="internal_notes" 
             placeholder="Notes pour votre équipe..."
-            class="form-control"
+            class="form-control @error('internal_notes') is-invalid @enderror"
             rows="3"
           >{{ old('internal_notes') }}</textarea>
+          @error('internal_notes') <span class="error-message">{{ $message }}</span> @enderror
           <small class="form-text text-muted">Notes internes (non visibles au producteur)</small>
         </div>
 
