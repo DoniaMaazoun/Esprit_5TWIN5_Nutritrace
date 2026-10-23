@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\HarvestFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\UploadedFile;
@@ -12,6 +14,8 @@ use Illuminate\Support\Str;
 
 class Harvest extends Model
 {
+    use HasFactory;
+
     /**
      * Unités acceptées et leur facteur de conversion vers le kg.
      */

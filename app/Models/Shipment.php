@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Shipment extends Model
 {
@@ -12,6 +13,7 @@ class Shipment extends Model
         'reference',
         'user_id',
         'harvest_id',
+        'production_lot_id',
         'product_name',
         'weight_kg',
         'origin_address',
@@ -75,6 +77,14 @@ class Shipment extends Model
     public function harvest(): BelongsTo
     {
         return $this->belongsTo(Harvest::class);
+    }
+
+    /**
+     * Lot de production fini transporté (module transformateur)
+     */
+    public function productionLot(): BelongsTo
+    {
+        return $this->belongsTo(ProductionLot::class);
     }
 
     /**

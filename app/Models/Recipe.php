@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\RecipeFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Recipe extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'processor_id',
         'name',

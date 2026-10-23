@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -12,6 +14,8 @@ use Illuminate\Support\Str;
  */
 class Category extends Model
 {
+    use HasFactory;
+
     /**
      * Icônes Font Awesome proposées dans le formulaire admin.
      */
@@ -23,7 +27,7 @@ class Category extends Model
         'fa-mug-hot' => 'Boisson', 'fa-spa' => 'Fleur',
     ];
 
-    protected $fillable = ['name', 'description', 'icon', 'color', 'is_active'];
+    protected $fillable = ['name', 'description', 'icon', 'color', 'is_active', 'slug'];
 
     protected function casts(): array
     {
@@ -33,7 +37,10 @@ class Category extends Model
     protected static function booted(): void
     {
         static::saving(function (Category $category) {
-            $category->slug = Str::slug($category->name);
+            // Ne générer le slug que s'il n'est pas déjà défini
+            if (empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
         });
     }
 

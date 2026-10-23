@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductionLotFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Production Lots: Finished products created from recipes (Module 3 - Processor)
  */
 class ProductionLot extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'recipe_id',
         'processor_id',
@@ -42,6 +47,14 @@ class ProductionLot extends Model
     public function processor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processor_id');
+    }
+
+    /**
+     * Relation: Production lot has multiple distributor stocks
+     */
+    public function distributorStocks(): HasMany
+    {
+        return $this->hasMany(DistributorStock::class);
     }
 
     /**

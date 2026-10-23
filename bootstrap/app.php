@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'pro' => \App\Http\Middleware\ProMiddleware::class,
             'producer' => \App\Http\Middleware\ProducerMiddleware::class,
             'processor' => \App\Http\Middleware\ProcessorMiddleware::class,
+            'consumer' => \App\Http\Middleware\ConsumerMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

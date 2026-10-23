@@ -146,6 +146,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Panier du consommateur (articles du panier)
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Commandes du consommateur
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Get professional type label in French
      */
     public function getProTypeLabel(): string

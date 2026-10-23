@@ -12,7 +12,8 @@
   };
   $links = [
       ['frontend.home', 'Accueil', 'fa-house', [$route === 'frontend.home']],
-      ['frontend.products', 'Produits', 'fa-basket-shopping', [$route === 'frontend.products']],
+      ['frontend.products', 'Récoltes', 'fa-basket-shopping', [$route === 'frontend.products']],
+      ['consumer.catalog', 'Produits finis', 'fa-box', [$route === 'consumer.catalog']],
       ['farms.directory', 'Exploitations', 'fa-wheat-awn', [in_array($route, ['farms.directory', 'farms.public'], true)]],
       ['frontend.about', 'À propos', 'fa-circle-info', [$route === 'frontend.about']],
       ['frontend.contact', 'Contact', 'fa-envelope', [$route === 'frontend.contact']],
@@ -78,6 +79,12 @@
               <a class="dropdown-item ftn__menu-cta" href="{{ route('pro.harvests.create') }}"><i class="fa-solid fa-plus"></i> Déclarer une récolte</a>
             @elseif($u->isPro() && $u->isApproved())
               <a class="dropdown-item" href="{{ $proSpaceUrl }}"><i class="fa-solid fa-briefcase"></i> Mon espace pro</a>
+            @elseif($u->isConsumer())
+              <a class="dropdown-item" href="{{ route('consumer.cart') }}"><i class="fa-solid fa-cart-shopping"></i> Mon panier</a>
+              <a class="dropdown-item" href="{{ route('consumer.orders.index') }}"><i class="fa-solid fa-list-check"></i> Mes commandes</a>
+              <a class="dropdown-item" href="{{ route('frontend.products') }}"><i class="fa-solid fa-basket-shopping"></i> Explorer les récoltes</a>
+              <a class="dropdown-item" href="{{ route('consumer.catalog') }}"><i class="fa-solid fa-box"></i> Produits finis</a>
+              <a class="dropdown-item" href="{{ route('consumer.nutri-ai.index') }}"><i class="fa-solid fa-robot"></i> NutriAI Assistant</a>
             @else
               <a class="dropdown-item" href="{{ route('frontend.products') }}"><i class="fa-solid fa-basket-shopping"></i> Explorer les produits</a>
               <a class="dropdown-item" href="{{ route('farms.directory') }}"><i class="fa-solid fa-wheat-awn"></i> Découvrir les exploitations</a>

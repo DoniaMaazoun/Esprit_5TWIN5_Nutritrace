@@ -37,6 +37,7 @@
 
       <div class="h-hero__actions">
         <a href="{{ route('frontend.products') }}" class="h-btn h-btn--primary"><i class="fa-solid fa-basket-shopping"></i> Explorer les produits</a>
+        <a href="{{ route('consumer.catalog') }}" class="h-btn h-btn--primary"><i class="fa-solid fa-box"></i> Produits finis</a>
         <a href="{{ route('farms.directory') }}" class="h-btn h-btn--ghost"><i class="fa-solid fa-map-location-dot"></i> Voir les exploitations</a>
       </div>
     </div>
@@ -193,7 +194,10 @@
           <li><i class="fa-solid fa-check"></i> Vérifier la qualité, la date de récolte et les traitements</li>
           <li><i class="fa-solid fa-check"></i> Soutenir les producteurs locaux et transparents</li>
         </ul>
-        <a href="{{ route('frontend.products') }}" class="h-btn h-btn--ghost">Explorer le catalogue <i class="fa-solid fa-arrow-right"></i></a>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ route('frontend.products') }}" class="h-btn h-btn--ghost">Récoltes fraîches <i class="fa-solid fa-arrow-right"></i></a>
+          <a href="{{ route('consumer.catalog') }}" class="h-btn h-btn--ghost">Produits finis <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
       </div>
       <div class="h-aud h-aud--producer">
         <span class="h-aud__icon"><i class="fa-solid fa-tractor"></i></span>

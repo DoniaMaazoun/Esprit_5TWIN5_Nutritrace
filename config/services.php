@@ -32,7 +32,16 @@ return [
     'ai' => [
         'key' => env('AI_API_KEY'),
         'base_url' => env('AI_BASE_URL', 'https://api.groq.com/openai/v1'),
-        'model' => env('AI_MODEL', 'llama-3.3-70b-versatile'),
+        'model' => env('AI_MODEL', 'llama-3.1-70b-versatile'),
+    ],
+
+    // Stripe (Mode test uniquement - Phase 4)
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => env('STRIPE_CURRENCY', 'usd'),
+        'mode' => env('STRIPE_MODE', 'test'),
     ],
 
     'slack' => [
