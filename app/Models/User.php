@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -163,6 +164,14 @@ class User extends Authenticatable
     {
         return collect(preg_split('/\s+/', trim((string) $this->name)))->filter()->take(2)
             ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+    }
+
+    /**
+     * Mot de passe oublié : e-mail de réinitialisation en français (Farm to Fork)
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**

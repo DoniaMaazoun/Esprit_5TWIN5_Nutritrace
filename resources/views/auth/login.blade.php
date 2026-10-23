@@ -57,6 +57,7 @@
 
         <div class="auth-row">
           <label class="auth-check"><input type="checkbox" name="remember" id="remember_me"> Se souvenir de moi</label>
+          <a href="{{ route('password.request') }}" class="auth-forgot">Mot de passe oublié ?</a>
         </div>
 
         <button type="submit" class="auth-submit"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
