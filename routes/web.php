@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\FarmManagementController;
 use App\Http\Controllers\Admin\HarvestManagementController;
 use App\Http\Controllers\Admin\ProcessorSupervisionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Pro\AiController;
 use App\Http\Controllers\Pro\FarmController;
@@ -24,6 +26,16 @@ Route::middleware('guest')->group(function () {
     // Login
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+    // Mot de passe oublié : lien par e-mail (token expirable, voir config/auth.php)
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.update');
 });
 
 // Logout
