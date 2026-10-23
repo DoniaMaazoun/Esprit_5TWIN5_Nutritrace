@@ -58,13 +58,13 @@
       @auth
         <div class="dropdown">
           <button class="ftn__user" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="ftn-user-btn">
-            <span class="ftn__avatar">{{ $initials }}</span>
+            <span class="ftn__avatar">@include('profile._avatar', ['user' => $u])</span>
             <span class="ftn__user-meta d-none d-lg-flex"><strong>{{ \Illuminate\Support\Str::limit($u->name, 18) }}</strong><small>{{ $role[0] }}</small></span>
             <i class="fa-solid fa-chevron-down ftn__chev"></i>
           </button>
           <div class="dropdown-menu dropdown-menu-end ftn__panel ftn__menu" aria-labelledby="ftn-user-btn">
             <div class="ftn__menu-head">
-              <span class="ftn__avatar ftn__avatar--lg">{{ $initials }}</span>
+              <span class="ftn__avatar ftn__avatar--lg">@include('profile._avatar', ['user' => $u])</span>
               <div><strong>{{ $u->name }}</strong><small>{{ $u->email }}</small><span class="ftn__role"><i class="fa-solid {{ $role[1] }}"></i> {{ $role[0] }}</span></div>
             </div>
             @if($u->isAdmin())
@@ -82,6 +82,7 @@
               <a class="dropdown-item" href="{{ route('frontend.products') }}"><i class="fa-solid fa-basket-shopping"></i> Explorer les produits</a>
               <a class="dropdown-item" href="{{ route('farms.directory') }}"><i class="fa-solid fa-wheat-awn"></i> Découvrir les exploitations</a>
             @endif
+            <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-solid fa-user-gear"></i> Mon profil</a>
             <div class="dropdown-divider"></div>
             <form method="POST" action="{{ route('logout') }}">
               @csrf
@@ -112,6 +113,7 @@
         @elseif($u->isPro() && $u->isApproved())
           <a href="{{ $proSpaceUrl }}" class="ftn-mobile__link"><i class="fa-solid fa-gauge-high"></i> Mon espace</a>
         @endif
+        <a href="{{ route('profile.edit') }}" class="ftn-mobile__link"><i class="fa-solid fa-user-gear"></i> Mon profil</a>
       @else
         <div class="ftn-mobile__auth">
           <a href="{{ route('login') }}" class="ftn__btn ftn__btn--ghost">Connexion</a>

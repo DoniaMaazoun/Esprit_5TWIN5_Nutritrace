@@ -63,15 +63,16 @@
 
       <li class="nav-item dropdown user-dropdown">
         <a class="nav-link dropdown-toggle d-flex align-items-center" id="UserDropdown" href="#" data-toggle="dropdown" aria-expanded="false" style="gap:8px">
-          <span class="ftf-avatar">{{ $adminInitials }}</span>
+          <span class="ftf-avatar">@include('profile._avatar', ['user' => $admin])</span>
           <span class="d-none d-xl-inline text-white">{{ $admin->name }}</span>
         </a>
         <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
           <div class="dropdown-header text-center">
-            <span class="ftf-avatar ftf-avatar--lg">{{ $adminInitials }}</span>
+            <span class="ftf-avatar ftf-avatar--lg">@include('profile._avatar', ['user' => $admin])</span>
             <p class="mb-1 mt-3 font-weight-semibold">{{ $admin->name }}</p>
             <p class="font-weight-light text-muted mb-0">{{ $admin->email }}</p>
           </div>
+          <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="mdi mdi-account-settings mr-2"></i> Mon profil</a>
           <a class="dropdown-item" href="{{ route('backend.dashboard') }}"><i class="mdi mdi-view-dashboard mr-2"></i> Tableau de bord</a>
           <a class="dropdown-item" href="{{ route('frontend.products') }}" target="_blank"><i class="mdi mdi-storefront mr-2"></i> Catalogue public</a>
           <form method="POST" action="{{ route('logout') }}">
