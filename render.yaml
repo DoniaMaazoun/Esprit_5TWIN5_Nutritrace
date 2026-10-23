@@ -57,5 +57,22 @@ services:
         value: sync
       - key: SEED_DEMO_DATA
         value: "true"        # charge les comptes de démo au premier démarrage (base vide uniquement)
+      # E-mails (mot de passe oublié, notifications) via Gmail SMTP
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"         # STARTTLS
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_FROM_ADDRESS
+        value: noreply@farmtofork.tn
+      - key: MAIL_FROM_NAME
+        value: Farm to Fork
+      - key: MAIL_USERNAME
+        sync: false          # adresse Gmail d'envoi
+      - key: MAIL_PASSWORD
+        sync: false          # mot de passe d'application Gmail (saisi dans Render, jamais dans le dépôt)
       - key: AI_API_KEY
         sync: false          # optionnel : clé Groq/OpenAI ; vide = moteur IA local
