@@ -52,7 +52,7 @@
 <nav class="sidebar sidebar-offcanvas" id="sidebar" aria-label="Menu du back-office">
   <div class="ftf-side">
     <div class="ftf-profile">
-      <span class="ftf-profile__avatar">{{ $meInitials }}</span>
+      <span class="ftf-profile__avatar">@include('profile._avatar', ['user' => $me])</span>
       <div><strong>{{ $me->name }}</strong><small>Administrateur</small></div>
     </div>
 

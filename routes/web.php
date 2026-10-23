@@ -210,3 +210,6 @@ Route::prefix('admin')->name('backend.')->middleware(['auth', 'admin'])->group(f
 
 // ==================== MODULE 3 - DISTRIBUTEUR ====================
 require __DIR__.'/distributor.php';
+
+// ==================== GESTION USER - PROFIL ====================
+require __DIR__.'/profile.php';
