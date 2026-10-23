@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use Database\Factories\PointOfSaleFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PointOfSale extends Model
 {
+    use HasFactory;
+
     protected $table = 'points_of_sale';
 
     protected $fillable = [
@@ -40,6 +45,14 @@ class PointOfSale extends Model
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class);
+    }
+
+    /**
+     * Stocks de produits finis disponibles à ce point de vente
+     */
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(DistributorStock::class);
     }
 
     public function getTypeLabel(): string

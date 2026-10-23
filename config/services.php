@@ -35,6 +35,15 @@ return [
         'model' => env('AI_MODEL', 'llama-3.3-70b-versatile'),
     ],
 
+    // Stripe (Mode test uniquement - Phase 4)
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => env('STRIPE_CURRENCY', 'usd'),
+        'mode' => env('STRIPE_MODE', 'test'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

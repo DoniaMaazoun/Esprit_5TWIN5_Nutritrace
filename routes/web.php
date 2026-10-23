@@ -9,6 +9,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Consumer\CatalogController;
+use App\Http\Controllers\Consumer\CartController;
+use App\Http\Controllers\Consumer\NutriAIController;
+use App\Http\Controllers\Consumer\OrderController;
+use App\Http\Controllers\Consumer\StripeController;
 use App\Http\Controllers\Pro\AiController;
 use App\Http\Controllers\Pro\FarmController;
 use App\Http\Controllers\Pro\HarvestController;
@@ -57,6 +62,47 @@ Route::name('frontend.')->group(function () {
     // Contact (placeholder)
     Route::get('/contact', [HomeController::class, 'index'])->name('contact'); // TODO: créer la vue contact
 });
+
+// ==================== CONSUMER ====================
+Route::prefix('consumer')->name('consumer.')->group(function () {
+    // Catalogue des produits finis (accessible sans auth pour consultation)
+    Route::get('/catalogue', [CatalogController::class, 'index'])->name('catalog');
+    Route::get('/catalogue/{stock}', [CatalogController::class, 'show'])->name('catalog.show');
+
+    // Panier et commandes (nécessite auth et role=consumer)
+    Route::middleware(['auth', 'consumer'])->group(function () {
+        // Panier
+        Route::get('/panier', [CartController::class, 'index'])->name('cart');
+        Route::post('/panier/add/{stock}', [CartController::class, 'add'])->name('cart.add');
+        Route::put('/panier/{cartItem}', [CartController::class, 'update'])->name('cart.update');
+        Route::delete('/panier/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
+        Route::delete('/panier', [CartController::class, 'clear'])->name('cart.clear');
+
+        // Commandes
+        Route::get('/commandes', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/commandes/checkout', [OrderController::class, 'checkout'])->name('orders.checkout');
+        Route::post('/commandes', [OrderController::class, 'store'])->name('orders.store');
+        Route::get('/commandes/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::put('/commandes/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+
+        // Stripe
+        Route::get('/stripe/create/{order}', [StripeController::class, 'createCheckoutSession'])->name('stripe.create');
+        Route::get('/stripe/success/{order}', [StripeController::class, 'success'])->name('stripe.success');
+        Route::get('/stripe/cancel/{order}', [StripeController::class, 'cancel'])->name('stripe.cancel');
+
+        // NutriAI Assistant
+        Route::get('/nutri-ai', [NutriAIController::class, 'index'])->name('nutri-ai.index');
+        Route::post('/nutri-ai/chat', [NutriAIController::class, 'chat'])
+            ->middleware('throttle:10,1')
+            ->name('nutri-ai.chat');
+        Route::post('/nutri-ai/search', [NutriAIController::class, 'search'])->name('nutri-ai.search');
+        Route::post('/nutri-ai/product', [NutriAIController::class, 'getProduct'])->name('nutri-ai.product');
+        Route::post('/nutri-ai/traceability', [NutriAIController::class, 'traceability'])->name('nutri-ai.traceability');
+    });
+});
+
+// Webhook Stripe (exclu du middleware CSRF)
+Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ==================== PRO DASHBOARD ====================
 Route::prefix('pro')->name('pro.')->middleware(['auth', 'pro'])->group(function () {

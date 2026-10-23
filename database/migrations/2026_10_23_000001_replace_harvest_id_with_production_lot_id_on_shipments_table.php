@@ -19,11 +19,14 @@ return new class extends Migration
             });
         }
 
-        Schema::table('shipments', function (Blueprint $table) {
-            // Si le lot est supprimé, l'expédition reste mais n'est plus reliée
-            $table->foreignId('production_lot_id')->nullable()->after('user_id')
-                ->constrained('production_lots')->nullOnDelete();
-        });
+        // Peut déjà exister (migration 2026_10_22_212246 du module panier / NutriAI)
+        if (! Schema::hasColumn('shipments', 'production_lot_id')) {
+            Schema::table('shipments', function (Blueprint $table) {
+                // Si le lot est supprimé, l'expédition reste mais n'est plus reliée
+                $table->foreignId('production_lot_id')->nullable()->after('user_id')
+                    ->constrained('production_lots')->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
